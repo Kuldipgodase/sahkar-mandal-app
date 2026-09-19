@@ -623,9 +623,12 @@ function AppHeader({ title, onBack, onNotif, onProfile, showBell = false, lang, 
   title: string; onBack?: () => void; onNotif?: () => void; onProfile?: () => void; showBell?: boolean; lang: Lang; children?: React.ReactNode
 }) {
   return (
-    <div className="bg-[#8B0000] px-4 pt-10 pb-4 flex items-center gap-3 flex-shrink-0">
+    <div
+      className="bg-[#8B0000] px-4 pb-3.5 flex items-center gap-3 flex-shrink-0 shadow-sm"
+      style={{ paddingTop: 'max(env(safe-area-inset-top, 0px) + 12px, 20px)' }}
+    >
       {onBack && (
-        <button onClick={onBack} className="w-9 h-9 rounded-full bg-white/15 flex items-center justify-center flex-shrink-0">
+        <button onClick={onBack} className="w-9 h-9 rounded-full bg-white/15 flex items-center justify-center flex-shrink-0 active:scale-95 transition-transform" aria-label="Back">
           <ChevronLeft className="w-5 h-5 text-white" />
         </button>
       )}
@@ -835,20 +838,20 @@ function SplashScreen({ onDone }: { onDone: () => void }) {
   }, [onDone])
 
   return (
-    <div className="flex-1 relative overflow-hidden flex items-center justify-center" style={{ background: '#540206' }}>
-      {/* Container preserving artwork aspect ratio (851x1847) so loading bar and icons are never cropped */}
-      <div className="relative h-full flex items-center justify-center" style={{ aspectRatio: '851 / 1847', maxWidth: '100%', maxHeight: '100%' }}>
+    <div className="flex-1 w-full h-full relative overflow-hidden flex items-center justify-center" style={{ background: '#540206' }}>
+      {/* Full-bleed splash container adapting edge-to-edge on any Android screen aspect ratio */}
+      <div className="relative w-full h-full max-w-[480px] flex items-center justify-center overflow-hidden">
         <img
           src={splashBg}
           alt="सहकार मित्र मंडळ"
-          className="w-full h-full object-cover select-none pointer-events-none"
+          className="w-full h-full object-cover object-top select-none pointer-events-none"
         />
 
         {/* Loading component — placed in the designated gap between Sahakar logo and feature badges */}
         <div style={{
           position: 'absolute',
           left: '10%', right: '10%',
-          top: '72.8%',
+          bottom: '23.8%',
         }}>
           {/* Bar + percentage row */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -913,7 +916,7 @@ function LanguageScreen({ onSelect }: { onSelect: (l: Lang) => void }) {
   return (
     <div className="flex-1 flex flex-col bg-[#FFFBF5] overflow-y-auto no-scrollbar">
       {/* Skip button */}
-      <div className="flex justify-end px-5 pt-5">
+      <div className="flex justify-end px-5" style={{ paddingTop: 'max(env(safe-area-inset-top, 0px) + 12px, 18px)' }}>
         <button className="flex items-center gap-1 border border-[#8B0000]/30 rounded-full px-4 py-1.5 text-[13px] text-[#8B0000] font-medium">
           Skip <ChevronRight className="w-3.5 h-3.5"/>
         </button>
@@ -1014,7 +1017,7 @@ function WelcomeScreen({ lang, onNext }: { lang: Lang; onNext: () => void }) {
   return (
     <div className="flex-1 flex flex-col bg-[#FFFBF5] overflow-y-auto no-scrollbar">
       {/* Top nav */}
-      <div className="flex items-center justify-between px-5 pt-5">
+      <div className="flex items-center justify-between px-5" style={{ paddingTop: 'max(env(safe-area-inset-top, 0px) + 12px, 18px)' }}>
         <div className="w-8"/>
         <div/>
         <button className="flex items-center gap-1 border border-[#8B0000]/30 rounded-full px-4 py-1.5 text-[13px] text-[#8B0000] font-medium">
@@ -1101,7 +1104,7 @@ function LoginScreen({ lang, onNext, onRegister, pop }: { lang: Lang; onNext: ()
   return (
     <div className="flex-1 flex flex-col bg-[#FFFBF5] overflow-y-auto no-scrollbar">
       {/* Top nav */}
-      <div className="flex items-center justify-between px-5 pt-5 mb-2">
+      <div className="flex items-center justify-between px-5 mb-2" style={{ paddingTop: 'max(env(safe-area-inset-top, 0px) + 12px, 18px)' }}>
         <button onClick={pop} className="w-9 h-9 rounded-full border border-stone-200 bg-white flex items-center justify-center">
           <ChevronLeft className="w-4.5 h-4.5 text-[#2C2C2C]"/>
         </button>
@@ -1168,7 +1171,7 @@ function RegisterScreen({ lang, onNext, pop }: { lang: Lang; onNext: () => void;
   return (
     <div className="flex-1 flex flex-col bg-[#FFFBF5] overflow-y-auto no-scrollbar">
       {/* Top nav */}
-      <div className="flex items-center justify-between px-5 pt-5 mb-2">
+      <div className="flex items-center justify-between px-5 mb-2" style={{ paddingTop: 'max(env(safe-area-inset-top, 0px) + 12px, 18px)' }}>
         <button onClick={pop} className="w-9 h-9 rounded-full border border-stone-200 bg-white flex items-center justify-center">
           <ChevronLeft className="w-4.5 h-4.5 text-[#2C2C2C]"/>
         </button>
@@ -1264,7 +1267,7 @@ function OTPScreen({ lang, onNext, pop }: { lang: Lang; onNext: () => void; pop?
   return (
     <div className="flex-1 flex flex-col bg-[#FFFBF5] overflow-y-auto no-scrollbar">
       {/* Top nav */}
-      <div className="flex items-center justify-between px-5 pt-5 mb-2">
+      <div className="flex items-center justify-between px-5 mb-2" style={{ paddingTop: 'max(env(safe-area-inset-top, 0px) + 12px, 18px)' }}>
         <button onClick={pop} className="w-9 h-9 rounded-full border border-stone-200 bg-white flex items-center justify-center">
           <ChevronLeft className="w-4.5 h-4.5 text-[#2C2C2C]"/>
         </button>
@@ -1370,7 +1373,7 @@ function ProfileSetupScreen({ lang, onNext, pop }: { lang: Lang; onNext: () => v
   return (
     <div className="flex-1 flex flex-col bg-[#FFFBF5] overflow-y-auto no-scrollbar">
       {/* Top nav */}
-      <div className="flex items-center justify-between px-5 pt-5 mb-2">
+      <div className="flex items-center justify-between px-5 mb-2" style={{ paddingTop: 'max(env(safe-area-inset-top, 0px) + 12px, 18px)' }}>
         <button onClick={pop} className="w-9 h-9 rounded-full border border-stone-200 bg-white flex items-center justify-center">
           <ChevronLeft className="w-4.5 h-4.5 text-[#2C2C2C]"/>
         </button>
@@ -1597,7 +1600,7 @@ function DashboardScreen({ lang, push }: { lang: Lang; push: (s: Screen) => void
         <div className="absolute top-0 right-0 w-40 h-40 rounded-full opacity-10"
           style={{ background: 'radial-gradient(circle, #FCD34D, transparent)' }} />
 
-        <div className="relative px-4 pt-10 pb-6">
+        <div className="relative px-4 pb-6" style={{ paddingTop: 'max(env(safe-area-inset-top, 0px) + 12px, 20px)' }}>
           {/* Logo row */}
           <div className="flex items-center justify-between mb-3">
             <img src={logoTransparent} alt="श्रीमंत सहकार मित्र मंडळ" className="h-10 w-auto object-contain" />
@@ -5100,7 +5103,7 @@ function RoleSelectionScreen({ lang, onNext }: { lang: Lang; onNext: () => void 
   const [selected, setSelected] = useState('Treasurer')
   return (
     <div className="flex-1 flex flex-col">
-      <div className="bg-[#8B0000] px-5 pt-10 pb-6">
+      <div className="bg-[#8B0000] px-5 pb-6" style={{ paddingTop: 'max(env(safe-area-inset-top, 0px) + 12px, 20px)' }}>
         <MandalLogo size={44} white />
         <h1 className="text-white text-[22px] font-bold mt-4">{lang === 'mr' ? 'आपली भूमिका' : 'Your Role'}</h1>
         <p className="text-white/70 text-[14px] mt-1">{lang === 'mr' ? 'मंडळाने आपल्याला खालील भूमिका दिली आहे' : 'Your assigned role in the Mandal'}</p>
@@ -5497,7 +5500,7 @@ function PublicPortalLandingScreen({ lang, push, pop }: { lang: Lang; push: (s: 
   return (
     <div className="flex-1 flex flex-col bg-[#FFFBF5]">
       {/* Decorative top */}
-      <div className="bg-[#8B0000] px-5 pt-10 pb-10 flex flex-col items-center relative overflow-hidden">
+      <div className="bg-[#8B0000] px-5 pb-8 flex flex-col items-center relative overflow-hidden" style={{ paddingTop: 'max(env(safe-area-inset-top, 0px) + 12px, 20px)' }}>
         <div className="absolute inset-0 opacity-10 flex items-center justify-center">
           <div className="text-white text-[180px] font-bold leading-none select-none">ॐ</div>
         </div>
@@ -5603,7 +5606,7 @@ function PublicDonationScreen({ lang, push, pop }: { lang: Lang; push: (s: Scree
 function PublicQRScreen({ lang, push, pop }: { lang: Lang; push: (s: Screen) => void; pop: () => void }) {
   return (
     <div className="flex-1 flex flex-col bg-[#FFFBF5]">
-      <div className="bg-[#8B0000] px-5 pt-10 pb-6 flex items-center gap-3">
+      <div className="bg-[#8B0000] px-5 pb-5 flex items-center gap-3" style={{ paddingTop: 'max(env(safe-area-inset-top, 0px) + 12px, 20px)' }}>
         <button onClick={pop} className="w-9 h-9 rounded-full bg-white/15 flex items-center justify-center">
           <ChevronLeft className="w-5 h-5 text-white" />
         </button>
@@ -5698,7 +5701,7 @@ function PublicSuccessScreen({ lang, push, pop }: { lang: Lang; push: (s: Screen
 function PublicReceiptScreen({ lang, pop }: { lang: Lang; pop: () => void }) {
   return (
     <div className="flex-1 flex flex-col">
-      <div className="bg-[#8B0000] px-5 pt-10 pb-4 flex items-center gap-3">
+      <div className="bg-[#8B0000] px-5 pb-4 flex items-center gap-3" style={{ paddingTop: 'max(env(safe-area-inset-top, 0px) + 12px, 20px)' }}>
         <button onClick={pop} className="w-9 h-9 rounded-full bg-white/15 flex items-center justify-center">
           <ChevronLeft className="w-5 h-5 text-white" />
         </button>

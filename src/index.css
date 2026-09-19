@@ -1,5 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700;800&family=Poppins:wght@300;400;500;600;700;800&display=swap');
 @import 'tailwindcss';
 
 @theme {
@@ -10,37 +9,83 @@
   --color-gold: #B45309;
   --color-ivory: #FFFBF5;
   --color-cream: #FFF8F0;
-  --font-sans: 'Poppins', 'Noto Sans Devanagari', sans-serif;
+  --font-sans: 'Poppins', 'Noto Sans Devanagari', system-ui, -apple-system, sans-serif;
+}
+
+:root {
+  color-scheme: light;
+  supported-color-schemes: light;
 }
 
 html, body {
   height: 100%;
+  height: 100dvh;
+  min-height: 100%;
+  width: 100%;
   overflow: hidden;
   background: #FFFBF5;
+  overscroll-behavior: none;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
 }
 
 #root {
   height: 100%;
+  height: 100dvh;
+  min-height: 100%;
+  width: 100%;
+  max-width: 100%;
   display: flex;
   flex-direction: column;
-  max-width: 480px;
-  margin: 0 auto;
   position: relative;
   overflow: hidden;
+  margin: 0 auto;
 }
 
-/* Safe area padding utilities */
-.pt-safe { padding-top: max(12px, env(safe-area-inset-top)); }
-.pb-safe { padding-bottom: max(8px, env(safe-area-inset-bottom)); }
+/* On desktop viewports, present a clean mobile device frame */
+@media (min-width: 600px) {
+  body {
+    background: #181512;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  #root {
+    max-width: 440px;
+    height: 94vh;
+    max-height: 920px;
+    border-radius: 36px;
+    box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.1);
+  }
+}
+
+/* Android & iOS Safe Area padding utilities */
+.pt-safe {
+  padding-top: max(16px, env(safe-area-inset-top, 0px));
+}
+.pb-safe {
+  padding-bottom: max(12px, calc(env(safe-area-inset-bottom, 0px) + 6px));
+}
 
 * {
-  font-family: 'Poppins', 'Noto Sans Devanagari', sans-serif;
+  font-family: 'Poppins', 'Noto Sans Devanagari', system-ui, -apple-system, sans-serif;
   -webkit-tap-highlight-color: transparent;
   box-sizing: border-box;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+button, a, input, select {
+  touch-action: manipulation;
 }
 
 .no-scrollbar::-webkit-scrollbar { display: none; }
-.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
 
 @keyframes slideUp {
   from { transform: translateY(20px); opacity: 0; }
