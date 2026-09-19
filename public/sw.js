@@ -1,5 +1,5 @@
-// Service Worker for Lokmanya Mandal App
-const CACHE_NAME = 'lokmanya-mandal-v1';
+// Service Worker for Sahakar Mandal App
+const CACHE_NAME = 'sahakar-mandal-v1';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();

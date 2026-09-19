@@ -55,7 +55,7 @@ const TR: Record<Lang, Record<string, string>> = {
     appName: 'Mandal Digital',
     tagline: 'One Mandal • One App • Complete Management',
     taglineSub: 'Manage • Collect • Record • Celebrate',
-    mandalName: 'Shrimant Lokmanya Mitra Mandal',
+    mandalName: 'Shrimant Sahakar Mitra Mandal',
     mandalLocation: 'Pune, Maharashtra',
     selectLanguage: 'Select Your Language',
     continue: 'Continue',
@@ -248,7 +248,7 @@ const TR: Record<Lang, Record<string, string>> = {
     appName: 'मंडळ डिजिटल',
     tagline: 'एक मंडळ • एक अॅप • संपूर्ण व्यवस्थापन',
     taglineSub: 'व्यवस्थापन • संकलन • नोंद • उत्सव',
-    mandalName: 'श्रीमंत लोकमान्य मित्र मंडळ',
+    mandalName: 'श्रीमंत सहकार मित्र मंडळ',
     mandalLocation: 'पुणे, महाराष्ट्र',
     selectLanguage: 'आपली भाषा निवडा',
     continue: 'पुढे चला',
@@ -510,7 +510,7 @@ function MandalLogo({ size = 48 }: { size?: number; white?: boolean }) {
   return (
     <img
       src={logoTransparent}
-      alt="श्रीमंत लोकमान्य मित्र मंडळ"
+      alt="श्रीमंत सहकार मित्र मंडळ"
       style={{ height: size, width: 'auto', maxWidth: size * 3.5 }}
       className="object-contain"
     />
@@ -829,55 +829,56 @@ const SPLASH_FEATURES = [
 function SplashScreen({ onDone }: { onDone: () => void }) {
   const [progress, setProgress] = useState(0)
   useEffect(() => {
-    const interval = setInterval(() => setProgress(p => Math.min(p + 1.6, 100)), 50)
-    const done = setTimeout(onDone, 3600)
+    const interval = setInterval(() => setProgress(p => Math.min(p + 1.8, 100)), 50)
+    const done = setTimeout(onDone, 3800)
     return () => { clearInterval(interval); clearTimeout(done) }
   }, [onDone])
 
   return (
-    <div className="flex-1 relative overflow-hidden" style={{ background: '#8B0000' }}>
-      {/* Full-bleed splash image — contains all visual content */}
-      <img
-        src={splashBg}
-        alt="Mandal Splash"
-        style={{
-          position: 'absolute', inset: 0,
-          width: '100%', height: '100%',
-          objectFit: 'cover', objectPosition: 'center top',
-        }}
-      />
+    <div className="flex-1 relative overflow-hidden flex items-center justify-center" style={{ background: '#540206' }}>
+      {/* Container preserving artwork aspect ratio (851x1847) so loading bar and icons are never cropped */}
+      <div className="relative h-full flex items-center justify-center" style={{ aspectRatio: '851 / 1847', maxWidth: '100%', maxHeight: '100%' }}>
+        <img
+          src={splashBg}
+          alt="सहकार मित्र मंडळ"
+          className="w-full h-full object-cover select-none pointer-events-none"
+        />
 
-      {/* Loading component — in the vacant gap between logo and 4 icons */}
-      <div style={{
-        position: 'absolute',
-        left: '8%', right: '8%',
-        top: '69.5%',
-      }}>
-        {/* Bar + percentage row */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{
-            flex: 1, height: 8, borderRadius: 99,
-            background: 'rgba(255,255,255,0.2)',
-            overflow: 'hidden',
-          }}>
+        {/* Loading component — placed in the designated gap between Sahakar logo and feature badges */}
+        <div style={{
+          position: 'absolute',
+          left: '10%', right: '10%',
+          top: '72.8%',
+        }}>
+          {/* Bar + percentage row */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{
-              height: '100%',
-              width: `${progress}%`,
-              borderRadius: 99,
-              background: 'linear-gradient(90deg, #B45309, #D97706, #F59E0B)',
-              transition: 'width 80ms linear',
-            }} />
+              flex: 1, height: 7, borderRadius: 99,
+              background: 'rgba(255,255,255,0.25)',
+              overflow: 'hidden',
+              boxShadow: '0 1px 4px rgba(0,0,0,0.4) inset',
+            }}>
+              <div style={{
+                height: '100%',
+                width: `${progress}%`,
+                borderRadius: 99,
+                background: 'linear-gradient(90deg, #D97706, #F59E0B, #FCD34D)',
+                boxShadow: '0 0 10px rgba(245,158,11,0.7)',
+                transition: 'width 80ms linear',
+              }} />
+            </div>
+            <span style={{ fontSize: 13, fontWeight: 700, color: '#FCD34D', minWidth: 38, textAlign: 'right' }}>
+              {Math.round(progress)}%
+            </span>
           </div>
-          <span style={{ fontSize: 13, fontWeight: 700, color: '#F59E0B', minWidth: 38, textAlign: 'right' }}>
-            {Math.round(progress)}%
-          </span>
+          {/* Loading label */}
+          <p style={{
+            textAlign: 'center', marginTop: 6,
+            fontSize: 11, color: 'rgba(255,255,255,0.85)',
+            letterSpacing: 1,
+            fontWeight: 500,
+          }}>लोड होत आहे... • Loading...</p>
         </div>
-        {/* Loading label */}
-        <p style={{
-          textAlign: 'center', marginTop: 7,
-          fontSize: 12, color: 'rgba(255,255,255,0.65)',
-          letterSpacing: 0.5,
-        }}>Loading...</p>
       </div>
     </div>
   )
@@ -920,7 +921,7 @@ function LanguageScreen({ onSelect }: { onSelect: (l: Lang) => void }) {
 
       {/* Logo block */}
       <div className="flex flex-col items-center px-6 pt-2 pb-4 relative">
-        <img src={logoTransparent} alt="श्रीमंत लोकमान्य मित्र मंडळ" className="h-16 w-auto object-contain"/>
+        <img src={logoTransparent} alt="श्रीमंत सहकार मित्र मंडळ" className="h-16 w-auto object-contain"/>
         <p className="text-[#8B0000]/70 text-[11px] mt-1 devanagari">|| एक मंडळ · एक अॅप · सर्व काही डिजिटल ||</p>
         <p className="text-stone-500 text-[10px]">Official Digital Mandal Platform</p>
         <div className="flex items-center gap-3 mt-3">
@@ -1024,7 +1025,7 @@ function WelcomeScreen({ lang, onNext }: { lang: Lang; onNext: () => void }) {
       {/* Logo + calligraphy */}
       <div className="relative px-5 pt-2 pb-3 flex items-start">
         <div className="flex-1">
-          <img src={logoTransparent} alt="श्रीमंत लोकमान्य मित्र मंडळ" className="h-14 w-auto object-contain"/>
+          <img src={logoTransparent} alt="श्रीमंत सहकार मित्र मंडळ" className="h-14 w-auto object-contain"/>
           <p className="text-[#8B0000]/60 text-[9px] mt-1 devanagari">|| एक मंडळ · एक अॅप · सर्व काही डिजिटल ||</p>
           <p className="text-stone-400 text-[9px]">Official Digital Mandal Platform</p>
         </div>
@@ -1111,7 +1112,7 @@ function LoginScreen({ lang, onNext, onRegister, pop }: { lang: Lang; onNext: ()
 
       {/* Logo */}
       <div className="flex flex-col items-center px-6 pt-1 pb-3">
-        <img src={logoTransparent} alt="श्रीमंत लोकमान्य मित्र मंडळ" className="h-14 w-auto object-contain"/>
+        <img src={logoTransparent} alt="श्रीमंत सहकार मित्र मंडळ" className="h-14 w-auto object-contain"/>
         <p className="text-[#8B0000]/60 text-[10px] mt-1 devanagari">|| एक मंडळ · एक अॅप · सर्व काही डिजिटल ||</p>
         <p className="text-stone-400 text-[9px]">Official Digital Mandal Platform</p>
       </div>
@@ -1599,7 +1600,7 @@ function DashboardScreen({ lang, push }: { lang: Lang; push: (s: Screen) => void
         <div className="relative px-4 pt-10 pb-6">
           {/* Logo row */}
           <div className="flex items-center justify-between mb-3">
-            <img src={logoTransparent} alt="श्रीमंत लोकमान्य मित्र मंडळ" className="h-10 w-auto object-contain" />
+            <img src={logoTransparent} alt="श्रीमंत सहकार मित्र मंडळ" className="h-10 w-auto object-contain" />
             <div className="flex items-center gap-2">
               <button onClick={() => push('notifications')}
                 className="w-9 h-9 rounded-full bg-white/15 backdrop-blur-sm border border-white/20 flex items-center justify-center relative">
@@ -3263,7 +3264,7 @@ function QRPaymentScreen({ lang, push, pop }: { lang: Lang; push: (s: Screen) =>
           <div className="animate-scale-in flex flex-col items-center gap-5">
             <div className="bg-white rounded-2xl p-5 shadow-card w-full flex flex-col items-center">
               <MandalLogo size={40} />
-              <h2 className="font-bold text-[16px] text-[#1C1917] mt-2">श्रीमंत लोकमान्य मित्र मंडळ</h2>
+              <h2 className="font-bold text-[16px] text-[#1C1917] mt-2">श्रीमंत सहकार मित्र मंडळ</h2>
               <p className="text-[#78716C] text-[12px] mb-4">Ganeshotsav 2026</p>
               {/* QR Code placeholder */}
               <div className="w-48 h-48 bg-[#1C1917] rounded-2xl flex items-center justify-center relative overflow-hidden">
@@ -3280,7 +3281,7 @@ function QRPaymentScreen({ lang, push, pop }: { lang: Lang; push: (s: Screen) =>
               </div>
               <p className="text-[20px] font-bold text-[#1C1917] mt-4">₹1,250</p>
               <p className="text-[#78716C] text-[13px]">Rahul Patil • Ganeshotsav 2026</p>
-              <p className="text-[12px] text-[#78716C] mt-1">{t.upiId}: siddhivinayak@sbi</p>
+              <p className="text-[12px] text-[#78716C] mt-1">{t.upiId}: sahakar@sbi</p>
             </div>
             {step === 'waiting' ? (
               <div className="flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-xl p-4 w-full animate-pulse-glow">
@@ -3388,8 +3389,8 @@ function ReceiptScreen({ lang, pop }: { lang: Lang; pop: () => void }) {
           <div className="bg-[#8B0000] px-5 py-6 flex flex-col items-center">
             <MandalLogo size={56} white />
             <p className="text-[#D97706] text-[12px] mt-2 font-semibold tracking-widest">॥ श्री गणेश ॥</p>
-            <h2 className="text-white text-[16px] font-bold mt-1 text-center">श्रीमंत लोकमान्य मित्र मंडळ</h2>
-            <p className="text-white/70 text-[12px]">Shrimant Lokmanya Mitra Mandal</p>
+            <h2 className="text-white text-[16px] font-bold mt-1 text-center">श्रीमंत सहकार मित्र मंडळ</h2>
+            <p className="text-white/70 text-[12px]">Shrimant Sahakar Mitra Mandal</p>
             <div className="w-full h-px bg-white/20 mt-3 mb-2" />
             <p className="text-[#D97706] text-[13px] font-bold uppercase tracking-wider">
               {lang === 'mr' ? 'देणगी पावती' : 'Donation Receipt'}
@@ -4694,7 +4695,7 @@ function MoreScreen({ lang, push, onLangToggle }: { lang: Lang; push: (s: Screen
           <div className="flex-1 min-w-0">
             <p className="font-bold text-[16px] text-[#1C1917]">Siddharth Kadam</p>
             <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold devanagari mt-0.5" style={{ background: '#FEF3C7', color: '#92400E' }}>खजिनदार</span>
-            <p className="text-[11px] text-[#78716C] mt-0.5 truncate devanagari">Shrimant Lokmanya Mitra Mandal</p>
+            <p className="text-[11px] text-[#78716C] mt-0.5 truncate devanagari">Shrimant Sahakar Mitra Mandal</p>
             <div className="flex items-center gap-3 mt-1">
               <div className="flex items-center gap-1">
                 <Phone className="w-3 h-3 text-stone-400" />
@@ -4702,7 +4703,7 @@ function MoreScreen({ lang, push, onLangToggle }: { lang: Lang; push: (s: Screen
               </div>
               <div className="flex items-center gap-1">
                 <Mail className="w-3 h-3 text-stone-400" />
-                <span className="text-[11px] text-[#78716C]">siddharth@mandal.org</span>
+                <span className="text-[11px] text-[#78716C]">siddharth@sahakarmandal.org</span>
               </div>
             </div>
           </div>
@@ -4924,16 +4925,16 @@ function MandalProfileScreen({ lang, pop }: { lang: Lang; pop: () => void }) {
       <div className="flex-1 overflow-y-auto no-scrollbar bg-[#FFFBF5] px-4 py-4">
         <div className="flex flex-col items-center py-5 mb-4">
           <MandalLogo size={72} />
-          <h2 className="text-[18px] font-bold text-[#1C1917] mt-3 text-center">श्रीमंत लोकमान्य मित्र मंडळ</h2>
-          <p className="text-[#78716C] text-[13px]">Shrimant Lokmanya Mitra Mandal</p>
+          <h2 className="text-[18px] font-bold text-[#1C1917] mt-3 text-center">श्रीमंत सहकार मित्र मंडळ</h2>
+          <p className="text-[#78716C] text-[13px]">Shrimant Sahakar Mitra Mandal</p>
           <p className="text-[12px] text-[#78716C] mt-0.5">Kasba Peth, Pune • Est. 1985</p>
         </div>
         <Card className="p-4 mb-4">
           {[
             ['Reg. Number', 'MAH-PNE-2023-04521'],
-            ['UPI ID', 'siddhivinayak@sbi'],
+            ['UPI ID', 'sahakar@sbi'],
             ['Contact', '+91 20 2345 6789'],
-            ['Email', 'info@siddhivinayak.org'],
+            ['Email', 'info@sahakarmandal.org'],
             ['Bank', 'State Bank of India, Kasba Branch'],
             ['IFSC', 'SBIN0004521'],
             ['Established', '1985'],
@@ -5199,8 +5200,8 @@ function WhatsAppReminderScreen({ lang, pop }: { lang: Lang; pop: () => void }) 
   const person = PENDING[0]
   const [msg, setMsg] = useState(
     lang === 'mr'
-      ? `नमस्कार ${person.name} जी 🙏\n\nश्रीमंत लोकमान्य मित्र मंडळ\n\nगणेशोत्सव २०२६ साठी आपली वर्गणी ₹${person.outstanding.toLocaleString('en-IN')} बाकी आहे.\n\nकृपया लवकरात लवकर भरावी.\n\nधन्यवाद!\nगणपती बाप्पा मोरया 🙏`
-      : `Namaste ${person.name} Ji 🙏\n\nShrimant Lokmanya Mitra Mandal\n\nYour Ganeshotsav 2026 contribution of ₹${person.outstanding.toLocaleString('en-IN')} is pending.\n\nPlease make the payment at your earliest convenience.\n\nThank you!\nGanpati Bappa Morya 🙏`
+      ? `नमस्कार ${person.name} जी 🙏\n\nश्रीमंत सहकार मित्र मंडळ\n\nगणेशोत्सव २०२६ साठी आपली वर्गणी ₹${person.outstanding.toLocaleString('en-IN')} बाकी आहे.\n\nकृपया लवकरात लवकर भरावी.\n\nधन्यवाद!\nगणपती बाप्पा मोरया 🙏`
+      : `Namaste ${person.name} Ji 🙏\n\nShrimant Sahakar Mitra Mandal\n\nYour Ganeshotsav 2026 contribution of ₹${person.outstanding.toLocaleString('en-IN')} is pending.\n\nPlease make the payment at your earliest convenience.\n\nThank you!\nGanpati Bappa Morya 🙏`
   )
   return (
     <div className="flex-1 flex flex-col">
@@ -5246,7 +5247,7 @@ function WhatsAppReminderScreen({ lang, pop }: { lang: Lang; pop: () => void }) 
 // ─── SCREEN: PAYMENT SETTINGS ─────────────────────────────────────────────────
 
 function PaymentSettingsScreen({ lang, pop }: { lang: Lang; pop: () => void }) {
-  const [upiId, setUpiId] = useState('siddhivinayak@sbi')
+  const [upiId, setUpiId] = useState('sahakar@sbi')
   return (
     <div className="flex-1 flex flex-col">
       <AppHeader title={lang === 'mr' ? 'पेमेंट सेटिंग्ज' : 'Payment Settings'} onBack={pop} lang={lang} />
@@ -5506,8 +5507,8 @@ function PublicPortalLandingScreen({ lang, push, pop }: { lang: Lang; push: (s: 
         <MandalLogo size={80} white />
         <div className="mt-4 text-center z-10">
           <p className="text-[#D97706] text-[12px] font-semibold tracking-widest mb-1">॥ श्री गणेश ॥</p>
-          <h1 className="text-white text-[22px] font-bold leading-tight">श्रीमंत लोकमान्य</h1>
-          <h1 className="text-white text-[22px] font-bold leading-tight">गणपती मंडळ</h1>
+          <h1 className="text-white text-[22px] font-bold leading-tight">श्रीमंत सहकार</h1>
+          <h1 className="text-white text-[22px] font-bold leading-tight">मित्र मंडळ</h1>
           <p className="text-white/70 text-[13px] mt-2">Kasba Peth, Pune • Est. 1985</p>
         </div>
       </div>
@@ -5608,13 +5609,13 @@ function PublicQRScreen({ lang, push, pop }: { lang: Lang; push: (s: Screen) => 
         </button>
         <div>
           <h1 className="text-white text-[18px] font-bold">{lang === 'mr' ? 'UPI पेमेंट' : 'UPI Payment'}</h1>
-          <p className="text-white/70 text-[12px]">siddhivinayak@sbi</p>
+          <p className="text-white/70 text-[12px]">sahakar@sbi</p>
         </div>
       </div>
       <div className="flex-1 flex flex-col items-center px-5 py-6">
         <Card className="p-5 w-full flex flex-col items-center mb-4">
           <MandalLogo size={40} />
-          <p className="font-bold text-[15px] text-[#1C1917] mt-2 text-center">श्रीमंत लोकमान्य मित्र मंडळ</p>
+          <p className="font-bold text-[15px] text-[#1C1917] mt-2 text-center">श्रीमंत सहकार मित्र मंडळ</p>
           <p className="text-[12px] text-[#78716C] mb-4">Ganeshotsav 2026</p>
           <div className="w-52 h-52 bg-[#1C1917] rounded-2xl flex items-center justify-center relative overflow-hidden">
             <div className="grid grid-cols-9 grid-rows-9 gap-0.5 p-3">
@@ -5708,7 +5709,7 @@ function PublicReceiptScreen({ lang, pop }: { lang: Lang; pop: () => void }) {
           <div className="bg-[#8B0000] px-5 py-6 flex flex-col items-center">
             <MandalLogo size={52} white />
             <p className="text-[#D97706] text-[11px] mt-2 font-semibold tracking-widest">॥ श्री गणेश ॥</p>
-            <h2 className="text-white text-[16px] font-bold mt-1 text-center">श्रीमंत लोकमान्य मित्र मंडळ</h2>
+            <h2 className="text-white text-[16px] font-bold mt-1 text-center">श्रीमंत सहकार मित्र मंडळ</h2>
             <p className="text-white/70 text-[12px]">Kasba Peth, Pune</p>
           </div>
           <div className="h-1 bg-gradient-to-r from-[#D97706] via-[#B45309] to-[#D97706]" />
