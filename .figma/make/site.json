@@ -1,0 +1,10 @@
+{
+  "description": "Enables Ganesh Mandal members to efficiently manage events, resources, and communications through a user-friendly, modern digital platform.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}

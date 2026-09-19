@@ -1,0 +1,24 @@
+{
+  "short_name": "Lokmanya",
+  "name": "Lokmanya Mandal",
+  "description": "Lokmanya Mandal Community & Festival Management App",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#090d16",
+  "theme_color": "#d97706",
+  "display": "standalone",
+  "orientation": "portrait"
+}
