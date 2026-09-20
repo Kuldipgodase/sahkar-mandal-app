@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "360821765398",
+    "project_id": "sahakar-mandal-app",
+    "storage_bucket": "sahakar-mandal-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:360821765398:android:488b2e20a23b7ff14f4c37",
+        "android_client_info": {
+          "package_name": "com.sahakarmandal.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB4pcU7TIk3v7TC4bsAl8H705Pwd4dPRjM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
