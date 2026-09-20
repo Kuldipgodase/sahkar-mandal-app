@@ -1,4 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { toJpeg } from 'html-to-image'
+import QRCode from 'react-qr-code'
 import { RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth'
 import { auth, authState } from './firebase'
 import type { ComponentType, ReactNode } from 'react'
@@ -13,6 +15,7 @@ import festivalGanesha from '@/assets/festival-ganesha.png'
 import festivalNavratri from '@/assets/festival-navratri.png'
 import festivalDahiHandi from '@/assets/festival-dahihandi.png'
 import festivalShiva from '@/assets/festival-shiva.png'
+import festivalDiwali from '@/assets/festival-diwali.png'
 import splashBg from '@/assets/splash-bg3.png'
 import {
   Home as HomeIcon, ArrowLeftRight, Sparkles, Users, MoreHorizontal,
@@ -65,7 +68,7 @@ const TR: Record<Lang, Record<string, string>> = {
     appName: 'Mandal Digital',
     tagline: 'One Mandal • One App • Complete Management',
     taglineSub: 'Manage • Collect • Record • Celebrate',
-    mandalName: 'Shrimant Sahakar Mitra Mandal',
+    mandalName: 'Sahakar Mitra Mandal',
     mandalLocation: 'Pune, Maharashtra',
     selectLanguage: 'Select Your Language',
     continue: 'Continue',
@@ -229,7 +232,7 @@ const TR: Record<Lang, Record<string, string>> = {
     expenseApproval: 'Expense awaiting approval',
     reportReady: 'Report is ready',
     thankYou: 'Thank You!',
-    ganapatiBappa: '🙏 Ganpati Bappa Morya!',
+    ganapatiBappa: 'Ganpati Bappa Morya!',
     incomeVsExpense: 'Income vs Expense',
     monthlyFlow: 'Monthly Cash Flow',
     festivalWise: 'Festival-wise Collection',
@@ -258,7 +261,7 @@ const TR: Record<Lang, Record<string, string>> = {
     appName: 'मंडळ डिजिटल',
     tagline: 'एक मंडळ • एक अॅप • संपूर्ण व्यवस्थापन',
     taglineSub: 'व्यवस्थापन • संकलन • नोंद • उत्सव',
-    mandalName: 'श्रीमंत सहकार मित्र मंडळ',
+    mandalName: 'सहकार मित्र मंडळ',
     mandalLocation: 'पुणे, महाराष्ट्र',
     selectLanguage: 'आपली भाषा निवडा',
     continue: 'पुढे चला',
@@ -422,7 +425,7 @@ const TR: Record<Lang, Record<string, string>> = {
     expenseApproval: 'खर्च मंजुरी प्रलंबित',
     reportReady: 'अहवाल तयार आहे',
     thankYou: 'धन्यवाद!',
-    ganapatiBappa: '🙏 गणपती बाप्पा मोरया!',
+    ganapatiBappa: 'गणपती बाप्पा मोरया!',
     incomeVsExpense: 'जमा विरुद्ध खर्च',
     monthlyFlow: 'मासिक रोख प्रवाह',
     festivalWise: 'उत्सवनिहाय संकलन',
@@ -540,7 +543,7 @@ const NOTIFICATIONS_DATA = [
   },
 ]
 
-const EXPENSES_DATA = [
+const EXPENSES_DATA: any[] = [
   { id: 1, vendor: 'Om Sound Systems', vendorMr: 'ओम साउंड सिस्टिम्स', category: 'Sound & DJ', categoryMr: 'ध्वनी व डीजे', amount: 25000, method: 'Cheque', date: '22 Aug 2026', dateMr: '२२ ऑगस्ट २०२६', status: 'paid', festival: 'Ganeshotsav 2026', festivalMr: 'गणेशोत्सव २०२६', ref: 'CHQ-004521' },
   { id: 2, vendor: 'Shri Decor Works', vendorMr: 'श्री डेकोर वर्क्स', category: 'Decoration', categoryMr: 'सजावट', amount: 18500, method: 'NEFT', date: '24 Aug 2026', dateMr: '२४ ऑगस्ट २०२६', status: 'approved', festival: 'Ganeshotsav 2026', festivalMr: 'गणेशोत्सव २०२६', ref: 'NEFT-20260824' },
   { id: 3, vendor: 'Sai Mandap House', vendorMr: 'साई मंडप हाउस', category: 'Mandap', categoryMr: 'मंडप', amount: 15000, method: 'Cash', date: '20 Aug 2026', dateMr: '२० ऑगस्ट २०२६', status: 'under-review', festival: 'Ganeshotsav 2026', festivalMr: 'गणेशोत्सव २०२६', ref: '' },
@@ -1560,6 +1563,16 @@ function ProfileSetupScreen({ lang, onNext, pop, store }: { lang: Lang; onNext: 
   const [city, setCity] = useState('')
   const [dob, setDob] = useState('')
   const [loading, setLoading] = useState(false)
+  const [photo, setPhoto] = useState<string | null>(null)
+
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (ev) => setPhoto(ev.target?.result as string);
+      reader.readAsDataURL(file);
+    }
+  }
   
   const roles = lang === 'mr'
     ? [{ key: 'सदस्य', icon: Users }, { key: 'देणगीदार', icon: IndianRupee }, { key: 'स्वयंसेवक', icon: Calendar }, { key: 'व्यवस्थापन', icon: Settings }]
@@ -1591,6 +1604,7 @@ function ProfileSetupScreen({ lang, onNext, pop, store }: { lang: Lang; onNext: 
       }
       
       store?.updateCurrentUser({
+        photo: photo || undefined,
         name: name || 'Kuldeep Godse',
         role: roleStr,
         roleMr: roleMrStr,
@@ -1658,7 +1672,7 @@ function ProfileSetupScreen({ lang, onNext, pop, store }: { lang: Lang; onNext: 
       <div className="flex flex-col gap-3 px-6">
         <AuthInput icon={User2}
           label={lang === 'mr' ? 'संपूर्ण नाव *' : 'Full Name *'}
-          placeholder={lang === 'mr' ? 'उदा. कुलदीप गोदसे' : 'e.g. Kuldeep Godse'}
+          placeholder={lang === 'mr' ? 'उदा. कुलदीप गोडसे' : 'e.g. Kuldeep Godse'}
           value={name} onChange={setName}/>
           
         <div className="flex items-center gap-2 bg-white border border-[#E8DFD4] rounded-2xl px-4 h-[54px] focus-within:border-[#8B0000] transition-colors relative">
@@ -1875,7 +1889,7 @@ function DashboardScreen({ lang, push, store }: { lang: Lang; push: (s: Screen) 
           <div>
             <p className="text-white/70 text-[12px] font-medium">
               {lang === 'mr' ? greetingMr : greetingEn},&nbsp;
-              <span className="text-white font-bold text-[14px]">Siddharth</span>
+              <span className="text-white font-bold text-[14px]">{store?.state.currentUser?.name?.split(' ')[0] || (lang === 'mr' ? 'सदस्य' : 'User')}</span>
               <span className="ml-1">🙏</span>
             </p>
             <div className="flex items-center gap-1.5 mt-0.5">
@@ -1922,7 +1936,7 @@ function DashboardScreen({ lang, push, store }: { lang: Lang; push: (s: Screen) 
               <p className="text-white/45 text-[10px] font-medium uppercase tracking-wide mb-2">
                 {lang === 'mr' ? 'एकूण जमा' : 'Total Income'}
               </p>
-              <p className="text-white font-bold leading-none tracking-tight" style={{ fontSize: 26 }}>{fmt(382451)}</p>
+              <p className="text-white font-bold leading-none tracking-tight" style={{ fontSize: 26 }}>{fmt((store?.state.transactions && store.state.transactions.length > 0) ? store.state.transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0) : 382451)}</p>
               <div className="flex items-center gap-1 mt-2.5">
                 <TrendingUp className="w-3 h-3 text-emerald-400" />
                 <span className="text-emerald-400 text-[10px] font-semibold">
@@ -1934,7 +1948,7 @@ function DashboardScreen({ lang, push, store }: { lang: Lang; push: (s: Screen) 
               <p className="text-white/45 text-[10px] font-medium uppercase tracking-wide mb-2">
                 {lang === 'mr' ? 'एकूण खर्च' : 'Total Expense'}
               </p>
-              <p className="text-white font-bold leading-none tracking-tight" style={{ fontSize: 26 }}>{fmt(231200)}</p>
+              <p className="text-white font-bold leading-none tracking-tight" style={{ fontSize: 26 }}>{fmt((store?.state.expenses && store.state.expenses.length > 0) ? store.state.expenses.reduce((s, e) => s + (Number(e.amount) || 0), 0) : ((store?.state.transactions && store.state.transactions.length > 0) ? store.state.transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0) : 73000))}</p>
               <div className="flex items-center gap-1 mt-2.5">
                 <TrendingDown className="w-3 h-3 text-amber-400" />
                 <span className="text-amber-400 text-[10px] font-semibold">
@@ -2079,7 +2093,7 @@ function DashboardScreen({ lang, push, store }: { lang: Lang; push: (s: Screen) 
         </div>
         <div className="bg-white rounded-2xl overflow-hidden border border-stone-100"
           style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.05), 0 4px 16px rgba(0,0,0,0.04)' }}>
-          {TRANSACTIONS.slice(0, 4).map((tx, i) => (
+          {(store?.state.transactions && store.state.transactions.length > 0 ? store.state.transactions : TRANSACTIONS).slice(0, 4).map((tx, i) => (
             <button key={tx.id} onClick={() => push('transaction-detail')}
               className={`w-full flex items-center gap-3 px-4 py-3 text-left active:bg-stone-50 transition-colors ${i < 3 ? 'border-b border-stone-50' : ''}`}>
               <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${tx.type === 'income' ? 'bg-emerald-50' : 'bg-red-50'}`}>
@@ -2165,8 +2179,8 @@ function CollectionsScreen({ lang, push, pop }: { lang: Lang; push: (s: Screen) 
                 <button className="flex-1 h-9 bg-stone-100 rounded-lg text-[#78716C] text-[12px] font-semibold">
                   {lang === 'mr' ? 'इतिहास' : 'History'}
                 </button>
-                <button className="w-9 h-9 bg-green-50 rounded-lg flex items-center justify-center">
-                  <MessageCircle className="w-4 h-4 text-green-600" />
+                <button onClick={() => push('whatsapp-reminder')} className="w-9 h-9 bg-green-50 rounded-lg flex items-center justify-center">
+                  <WhatsAppIcon className="w-4 h-4 text-green-600" />
                 </button>
               </div>
             </Card>
@@ -2184,13 +2198,60 @@ function CollectionsScreen({ lang, push, pop }: { lang: Lang; push: (s: Screen) 
 
 // ─── SCREEN: NEW COLLECTION ───────────────────────────────────────────────────
 
-function NewCollectionScreen({ lang, push, pop, store }: { lang: Lang; push: (s: Screen) => void; pop: () => void; store?: AppStore }) {
+function NewCollectionScreen({ lang, push, pop, store, onComplete }: { lang: Lang; push: (s: Screen) => void; pop: () => void; store?: AppStore; onComplete?: () => void }) {
   const t = TR[lang]
   const [step, setStep] = useState(1)
   const [method, setMethod] = useState('UPI')
+  const [donorName, setDonorName] = useState('')
+  const [donorPhone, setDonorPhone] = useState('')
+  const [amount, setAmount] = useState('1001')
+  const [festival, setFestival] = useState('Ganeshotsav 2026')
+  const [festivalMr, setFestivalMr] = useState('गणेशोत्सव २०२६')
+  const [note, setNote] = useState('')
+  const [upiRef, setUpiRef] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
   const methods = lang === 'mr'
     ? [{ k: 'Cash', l: 'रोख' }, { k: 'UPI', l: 'UPI' }, { k: 'NEFT', l: 'NEFT' }, { k: 'Cheque', l: 'धनादेश' }, { k: 'Bank', l: 'बँक' }]
     : [{ k: 'Cash', l: 'Cash' }, { k: 'UPI', l: 'UPI' }, { k: 'NEFT', l: 'NEFT' }, { k: 'Cheque', l: 'Cheque' }, { k: 'Bank', l: 'Bank' }]
+
+  const festList = store?.state.festivals && store.state.festivals.length > 0 ? store.state.festivals : FESTIVALS
+
+  const handleCreateDonation = async () => {
+    if (isSubmitting) return
+    setIsSubmitting(true)
+    const cleanName = donorName.trim() || (lang === 'mr' ? 'नवीन देणगीदार' : 'New Donor')
+    const cleanPhone = donorPhone.trim() || '98765 43210'
+    const numAmount = parseInt(amount) || 1001
+    const receiptId = 'RCP-2026-' + Math.floor(1000 + Math.random() * 9000)
+
+    const newTx = {
+      type: 'income' as const,
+      person: cleanName,
+      personMr: cleanName,
+      phone: cleanPhone,
+      amount: numAmount,
+      method: method,
+      methodMr: method === 'Cash' ? 'रोख' : method === 'Cheque' ? 'धनादेश' : method,
+      desc: 'Donation - ' + festival,
+      descMr: 'देणगी - ' + (festivalMr || festival),
+      festival: festival,
+      festivalMr: festivalMr || festival,
+      receipt: receiptId,
+      status: 'paid' as const,
+      time: 'Just now',
+      timeMr: 'आत्ताच',
+      createdAt: new Date().toISOString()
+    }
+
+    if (store?.addTransaction) {
+      await store.addTransaction(newTx)
+    }
+
+    setIsSubmitting(false)
+    push('payment-success')
+  }
+
   return (
     <div className="flex-1 flex flex-col">
       <AppHeader title={t.newCollection} onBack={pop} lang={lang}>
@@ -2206,31 +2267,56 @@ function NewCollectionScreen({ lang, push, pop, store }: { lang: Lang; push: (s:
             <p className="text-[12px] font-semibold text-[#78716C] uppercase tracking-wide mb-1">
               {lang === 'mr' ? 'टप्पा १ — देणगीदार माहिती' : 'Step 1 — Donor Information'}
             </p>
-            {/* Existing donor detected banner */}
-            <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 flex items-center gap-3">
-              <Info className="w-4 h-4 text-blue-600 flex-shrink-0" />
-              <p className="text-[12px] text-blue-700">
-                {lang === 'mr' ? 'हा देणगीदार आधीपासून नोंदलेला आहे.' : 'This donor is already registered. Previous history loaded.'}
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-center gap-3">
+              <Info className="w-4 h-4 text-[#D97706] flex-shrink-0" />
+              <p className="text-[12px] text-amber-800">
+                {lang === 'mr' ? 'येथे देणगीदाराचे नाव आणि मोबाइल नंबर प्रविष्ट करा.' : 'Enter donor name and mobile number to register real-time donation.'}
               </p>
             </div>
-            {[
-              { label: lang === 'mr' ? 'सदस्य / देणगीदाराचे नाव' : 'Member / Donor Name', placeholder: 'Rahul Patil', icon: Users },
-              { label: lang === 'mr' ? 'मोबाइल नंबर' : 'Mobile Number', placeholder: '+91 98765 43210', icon: Phone },
-            ].map(({ label, placeholder, icon: Icon }) => (
-              <div key={label}>
-                <label className="text-[13px] font-semibold text-[#1C1917] mb-2 block">{label}</label>
-                <div className="flex items-center gap-3 bg-white border border-stone-200 rounded-xl px-4 h-12 focus-within:border-[#8B0000] transition-colors">
-                  <Icon className="w-4 h-4 text-stone-400" />
-                  <input placeholder={placeholder} className="flex-1 text-[14px] outline-none text-[#1C1917] placeholder:text-stone-400 bg-transparent" />
-                </div>
+            <div>
+              <label className="text-[13px] font-semibold text-[#1C1917] mb-2 block">{lang === 'mr' ? 'सदस्य / देणगीदाराचे नाव *' : 'Member / Donor Name *'}</label>
+              <div className="flex items-center gap-3 bg-white border border-stone-200 rounded-xl px-4 h-12 focus-within:border-[#8B0000] transition-colors">
+                <Users className="w-4 h-4 text-stone-400" />
+                <input
+                  value={donorName}
+                  onChange={e => setDonorName(e.target.value)}
+                  placeholder={lang === 'mr' ? 'उदा. कुलदीप गोडसे / राहुल पाटील' : 'e.g. Rahul Patil'}
+                  className="flex-1 text-[14px] outline-none text-[#1C1917] placeholder:text-stone-400 bg-transparent"
+                />
               </div>
-            ))}
+            </div>
+            <div>
+              <label className="text-[13px] font-semibold text-[#1C1917] mb-2 block">{lang === 'mr' ? 'मोबाइल नंबर *' : 'Mobile Number *'}</label>
+              <div className="flex items-center gap-3 bg-white border border-stone-200 rounded-xl px-4 h-12 focus-within:border-[#8B0000] transition-colors">
+                <Phone className="w-4 h-4 text-stone-400" />
+                <input
+                  value={donorPhone}
+                  onChange={e => setDonorPhone(e.target.value)}
+                  placeholder={lang === 'mr' ? '+९१ ९८७६५ ४३२१०' : '+91 98765 43210'}
+                  className="flex-1 text-[14px] outline-none text-[#1C1917] placeholder:text-stone-400 bg-transparent"
+                  type="tel"
+                />
+              </div>
+            </div>
             <div>
               <label className="text-[13px] font-semibold text-[#1C1917] mb-2 block">{lang === 'mr' ? 'उत्सव' : 'Festival'}</label>
               <div className="flex items-center gap-3 bg-white border border-stone-200 rounded-xl px-4 h-12">
-                <Sparkles className="w-4 h-4 text-stone-400" />
-                <span className="flex-1 text-[14px] text-[#1C1917]">{lang === 'mr' ? 'गणेशोत्सव २०२६' : 'Ganeshotsav 2026'}</span>
-                <ChevronDown className="w-4 h-4 text-stone-400" />
+                <Sparkles className="w-4 h-4 text-[#D97706]" />
+                <select
+                  value={festival}
+                  onChange={e => {
+                    const sel = festList.find(f => f.name === e.target.value)
+                    setFestival(e.target.value)
+                    if (sel) setFestivalMr(sel.nameMr || sel.name)
+                  }}
+                  className="flex-1 text-[14px] text-[#1C1917] bg-transparent outline-none cursor-pointer"
+                >
+                  {festList.map(f => (
+                    <option key={f.name} value={f.name}>
+                      {lang === 'mr' ? (f.nameMr || f.name) : f.name}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
           </div>
@@ -2244,7 +2330,12 @@ function NewCollectionScreen({ lang, push, pop, store }: { lang: Lang; push: (s:
               <label className="text-[13px] font-semibold text-[#1C1917] mb-2 block">{t.amount}</label>
               <div className="flex items-center gap-3 bg-white border-2 border-[#8B0000] rounded-xl px-4 h-14 shadow-brand">
                 <IndianRupee className="w-5 h-5 text-[#8B0000]" />
-                <input defaultValue="1001" className="flex-1 text-[24px] font-bold text-[#1C1917] outline-none bg-transparent" type="number" />
+                <input
+                  value={amount}
+                  onChange={e => setAmount(e.target.value)}
+                  className="flex-1 text-[24px] font-bold text-[#1C1917] outline-none bg-transparent"
+                  type="number"
+                />
               </div>
             </div>
             <div>
@@ -2261,12 +2352,22 @@ function NewCollectionScreen({ lang, push, pop, store }: { lang: Lang; push: (s:
             {method === 'UPI' && (
               <div className="bg-blue-50 border border-blue-100 rounded-xl p-3">
                 <p className="text-[12px] text-blue-700 font-medium">UPI Ref: {lang === 'mr' ? 'वैकल्पिक' : 'Optional'}</p>
-                <input placeholder={lang === 'mr' ? 'UPI व्यवहार आयडी' : 'UPI transaction ID'} className="w-full mt-2 text-[14px] outline-none text-[#1C1917] bg-transparent border-b border-blue-200 pb-1" />
+                <input
+                  value={upiRef}
+                  onChange={e => setUpiRef(e.target.value)}
+                  placeholder={lang === 'mr' ? 'UPI व्यवहार आयडी' : 'UPI transaction ID'}
+                  className="w-full mt-2 text-[14px] outline-none text-[#1C1917] bg-transparent border-b border-blue-200 pb-1"
+                />
               </div>
             )}
             <div>
               <label className="text-[13px] font-semibold text-[#1C1917] mb-2 block">{t.note} ({lang === 'mr' ? 'वैकल्पिक' : 'Optional'})</label>
-              <textarea className="w-full bg-white border border-stone-200 rounded-xl px-4 py-3 text-[14px] outline-none text-[#1C1917] placeholder:text-stone-400 resize-none h-20" placeholder={lang === 'mr' ? 'नोंद टाका...' : 'Add note...'} />
+              <textarea
+                value={note}
+                onChange={e => setNote(e.target.value)}
+                className="w-full bg-white border border-stone-200 rounded-xl px-4 py-3 text-[14px] outline-none text-[#1C1917] placeholder:text-stone-400 resize-none h-20"
+                placeholder={lang === 'mr' ? 'नोंद टाका...' : 'Add note...'}
+              />
             </div>
           </div>
         )}
@@ -2278,10 +2379,10 @@ function NewCollectionScreen({ lang, push, pop, store }: { lang: Lang; push: (s:
             <Card className="p-4">
               <h3 className="font-bold text-[16px] text-[#1C1917] mb-4">{lang === 'mr' ? 'सारांश' : 'Collection Summary'}</h3>
               {[
-                [lang === 'mr' ? 'देणगीदार' : 'Donor', 'Rahul Patil'],
-                [lang === 'mr' ? 'मोबाइल' : 'Mobile', '+91 65432 10987'],
-                [lang === 'mr' ? 'उत्सव' : 'Festival', lang === 'mr' ? 'गणेशोत्सव २०२६' : 'Ganeshotsav 2026'],
-                [lang === 'mr' ? 'रक्कम' : 'Amount', '₹1,001'],
+                [lang === 'mr' ? 'देणगीदार' : 'Donor', donorName.trim() || (lang === 'mr' ? 'नवीन देणगीदार' : 'New Donor')],
+                [lang === 'mr' ? 'मोबाइल' : 'Mobile', donorPhone.trim() || '+91 98765 43210'],
+                [lang === 'mr' ? 'उत्सव' : 'Festival', lang === 'mr' ? (festivalMr || festival) : festival],
+                [lang === 'mr' ? 'रक्कम' : 'Amount', fmt(parseInt(amount) || 1001)],
                 [lang === 'mr' ? 'पेमेंट' : 'Payment', lang === 'mr' && method === 'Cash' ? 'रोख' : method],
               ].map(([k, v]) => (
                 <div key={k} className="flex items-center justify-between py-2 border-b border-stone-100 last:border-0">
@@ -2297,8 +2398,8 @@ function NewCollectionScreen({ lang, push, pop, store }: { lang: Lang; push: (s:
         {step > 1 && <Btn variant="secondary" onClick={() => setStep(s => s - 1)} className="flex-1">{lang === 'mr' ? 'मागे' : 'Back'}</Btn>}
         {step < 3
           ? <Btn onClick={() => setStep(s => s + 1)} className="flex-1">{lang === 'mr' ? 'पुढे' : 'Next'} →</Btn>
-          : <Btn onClick={() => push('payment-success')} className="flex-1" icon={<Check className="w-4 h-4" />}>
-            {t.generateReceipt}
+          : <Btn onClick={handleCreateDonation} className="flex-1" icon={<Check className="w-4 h-4" />}>
+            {isSubmitting ? (lang === 'mr' ? 'नोंद होत आहे...' : 'Saving...') : t.generateReceipt}
           </Btn>
         }
       </div>
@@ -2308,7 +2409,7 @@ function NewCollectionScreen({ lang, push, pop, store }: { lang: Lang; push: (s:
 
 // ─── SCREEN: TRANSACTIONS ────────────────────────────────────────────────────
 
-function TransactionsScreen({ lang, push, store }: { lang: Lang; push: (s: Screen) => void; store?: AppStore }) {
+function TransactionsScreen({ lang, push, store, onSelectExpense }: { lang: Lang; push: (s: Screen) => void; store?: AppStore; onSelectExpense?: (e: any) => void }) {
   const t = TR[lang]
   const [tab, setTab] = useState<'all' | 'income' | 'expense' | 'donation'>('all')
   const [search, setSearch] = useState('')
@@ -2580,11 +2681,55 @@ function FestivalsScreen({ lang, push, store }: { lang: Lang; push: (s: Screen) 
     completed: { bg: 'bg-stone-100',  text: 'text-stone-600',   label: lang === 'mr' ? 'पूर्ण' : 'Completed' },
     planned:   { bg: 'bg-slate-100',  text: 'text-slate-600',   label: lang === 'mr' ? 'नियोजित' : 'Planned' },
   }
-  const festivalImages: Record<number, string> = {
+  const festivalImages: Record<string, string> = {
     1: festivalGanesha,
     2: festivalNavratri,
     3: festivalDahiHandi,
     4: festivalShiva,
+    5: festivalDiwali,
+  }
+
+  const getFestivalImage = (f: any, index: number = 0): string => {
+    if (f.image && typeof f.image === 'string' && f.image.trim().length > 0) {
+      return f.image;
+    }
+    const idStr = String(f.id ?? f._id ?? '');
+    if (festivalImages[idStr]) return festivalImages[idStr];
+
+    const text = (String(f.name || '') + ' ' + String(f.nameMr || '') + ' ' + String(f.quote || '') + ' ' + String(f.quoteMr || '')).toLowerCase();
+    if (text.includes('ganesh') || text.includes('गणेश') || text.includes('बाप्पा')) {
+      return festivalGanesha;
+    }
+    if (text.includes('navratri') || text.includes('नवरात्र') || text.includes('दुर्गा') || text.includes('durga')) {
+      return festivalNavratri;
+    }
+    if (text.includes('diwali') || text.includes('दीपावली') || text.includes('दिवाळी') || text.includes('दीप') || text.includes('light')) {
+      return festivalDiwali;
+    }
+    if (text.includes('dahi') || text.includes('handi') || text.includes('दही') || text.includes('हंडी') || text.includes('गोविंदा')) {
+      return festivalDahiHandi;
+    }
+    if (text.includes('shiv') || text.includes('शिव') || text.includes('jayanti') || text.includes('जयंती')) {
+      return festivalShiva;
+    }
+
+    const fallbackList = [festivalGanesha, festivalNavratri, festivalDiwali, festivalDahiHandi, festivalShiva];
+    return fallbackList[index % fallbackList.length];
+  }
+
+  const getFestivalDates = (f: any): string => {
+    if (lang === 'mr' && f.datesMr) return f.datesMr;
+    if (f.dates) return f.dates;
+    if (f.startDate) {
+      try {
+        const s = new Date(f.startDate).toLocaleDateString(lang === 'mr' ? 'mr-IN' : 'en-IN', { day: 'numeric', month: 'short' });
+        const e = f.endDate ? new Date(f.endDate).toLocaleDateString(lang === 'mr' ? 'mr-IN' : 'en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+        return e ? `${s} – ${e}` : s;
+      } catch {
+        return '-';
+      }
+    }
+    return '-';
   }
 
   const festivals = store?.state.festivals ?? []
@@ -2647,20 +2792,21 @@ function FestivalsScreen({ lang, push, store }: { lang: Lang; push: (s: Screen) 
       {/* Scrollable list */}
       <div className="flex-1 overflow-y-auto no-scrollbar bg-[#FFFBF5] px-4 py-4">
         <div className="flex flex-col gap-4">
-          {filtered.map(f => {
+          {filtered.map((f, idx) => {
             const badge = statusBadgeStyle[f.status]
             const borderColor = statusBorderColor[f.status]
+            const festivalImg = getFestivalImage(f, idx)
             return (
-              <div key={f.id} onClick={() => push('festival-detail')}
+              <div key={f.id || f._id || idx} onClick={() => push('festival-detail')}
                 className="bg-white rounded-2xl overflow-hidden active:opacity-80 transition-opacity"
                 style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.08)', borderLeft: `4px solid ${borderColor}` }}>
                 <div className="flex">
                   {/* Left image panel */}
-                  <div className="w-[110px] flex-shrink-0 relative">
-                    <img src={festivalImages[f.id]} alt={lang === 'mr' ? f.nameMr : f.name}
+                  <div className="w-[110px] flex-shrink-0 relative overflow-hidden bg-stone-900">
+                    <img src={festivalImg} alt={lang === 'mr' ? f.nameMr : f.name}
                       className="w-full h-full object-cover"
                       style={{ minHeight: 120 }}
-                      onError={e => { (e.target as HTMLImageElement).src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="110" height="120"><rect fill="%238B0000" width="110" height="120"/></svg>' }}
+                      onError={e => { (e.target as HTMLImageElement).src = festivalGanesha }}
                     />
                     {/* Gradient overlay */}
                     <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.65) 40%, transparent 70%)' }} />
@@ -2692,7 +2838,7 @@ function FestivalsScreen({ lang, push, store }: { lang: Lang; push: (s: Screen) 
                         </h3>
                         <div className="flex items-center gap-1 mt-1">
                           <Calendar className="w-3 h-3 text-[#78716C] flex-shrink-0" />
-                          <p className="text-[11px] text-[#78716C]">{f.dates}</p>
+                          <p className="text-[11px] text-[#78716C]">{getFestivalDates(f)}</p>
                         </div>
                         <div className="flex items-center gap-1 mt-0.5">
                           <MapPin className="w-3 h-3 text-[#78716C] flex-shrink-0" />
@@ -3142,9 +3288,19 @@ function MembersScreen({ lang, push, store }: { lang: Lang; push: (s: Screen) =>
 
 // ─── SCREEN: MEMBER PROFILE ───────────────────────────────────────────────────
 
-function MemberProfileScreen({ lang, push, pop }: { lang: Lang; push: (s: Screen) => void; pop: () => void }) {
-  const m = MEMBERS[0]
+function MemberProfileScreen({ lang, push, pop, store }: { lang: Lang; push: (s: Screen) => void; pop: () => void; store?: AppStore }) {
   const t = TR[lang]
+  const cu = store?.state.currentUser
+  const name = cu?.name ?? 'Member'
+  const nameMr = cu?.nameMr ?? cu?.name ?? 'सदस्य'
+  const role = cu?.role ?? 'Member'
+  const roleMr = cu?.roleMr ?? 'सदस्य'
+  const mobile = cu?.mobile ?? '—'
+  const email = cu?.email ?? ((cu?.name ?? 'member').toLowerCase().replace(/\s/g, '.') + '@sahakarmandal.org')
+  const photo = cu?.photo
+  const avatar = name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
+  const myTxs = (store?.state.transactions ?? []).filter(tx => tx.type === 'income')
+  const totalContrib = myTxs.reduce((s, tx) => s + tx.amount, 0)
   return (
     <div className="flex-1 flex flex-col">
       <div className="bg-[#8B0000] px-4 pt-10 pb-6">
@@ -3152,15 +3308,21 @@ function MemberProfileScreen({ lang, push, pop }: { lang: Lang; push: (s: Screen
           <ChevronLeft className="w-5 h-5 text-white" />
         </button>
         <div className="flex items-center gap-4">
-          <div className="w-16 h-16 rounded-2xl bg-white/20 text-white text-[24px] font-bold flex items-center justify-center">{m.avatar}</div>
+          <div className="w-16 h-16 rounded-2xl overflow-hidden bg-white/20 text-white text-[24px] font-bold flex items-center justify-center flex-shrink-0">
+            {photo ? <img src={photo} alt={name} className="w-full h-full object-cover" /> : <span>{avatar}</span>}
+          </div>
           <div>
-            <h1 className="text-white text-[20px] font-bold">{lang === 'mr' ? (m.nameMr || m.name) : m.name}</h1>
-            <RoleBadge role={m.role} lang={lang} />
+            <h1 className="text-white text-[20px] font-bold">{lang === 'mr' ? nameMr : name}</h1>
+            <RoleBadge role={role} lang={lang} />
             <p className="text-white/70 text-[13px] mt-1">{lang === 'mr' ? 'सामील झाले' : 'Joined'}: {lang === 'mr' ? 'जानेवारी २०२४' : 'Jan 2024'}</p>
           </div>
         </div>
         <div className="grid grid-cols-3 gap-3 mt-4 bg-white/10 rounded-2xl p-3">
-          {[[lang === 'mr' ? 'एकूण योगदान' : 'Contribution', fmt(m.contributions)], [lang === 'mr' ? 'उत्सव' : 'Festivals', lang === 'mr' ? '४' : '4'], [lang === 'mr' ? 'स्थिती' : 'Status', lang === 'mr' ? 'सक्रिय' : 'Active']].map(([k, v]) => (
+          {[
+            [lang === 'mr' ? 'एकूण योगदान' : 'Contribution', fmt(totalContrib)],
+            [lang === 'mr' ? 'व्यवहार' : 'Transactions', String(myTxs.length)],
+            [lang === 'mr' ? 'स्थिती' : 'Status', lang === 'mr' ? 'सक्रिय' : 'Active']
+          ].map(([k, v]) => (
             <div key={k} className="text-center">
               <p className="text-white/60 text-[10px]">{k}</p>
               <p className="text-white font-bold text-[14px]">{v}</p>
@@ -3170,7 +3332,7 @@ function MemberProfileScreen({ lang, push, pop }: { lang: Lang; push: (s: Screen
       </div>
       <div className="flex-1 overflow-y-auto no-scrollbar bg-[#FFFBF5] px-4 py-4">
         <Card className="p-4 mb-4">
-          {[[t.mobile, m.mobile, Phone], [t.email, m.email, Mail], [t.role, lang === 'mr' ? 'खजिनदार' : m.role, Award]].map(([k, v, Icon]: any) => (
+          {[[t.mobile, mobile, Phone], [t.email, email, Mail], [t.role, lang === 'mr' ? roleMr : role, Award]].map(([k, v, Icon]: any) => (
             <div key={k} className="flex items-center gap-3 py-3 border-b border-stone-100 last:border-0">
               <div className="w-8 h-8 rounded-lg bg-[#8B0000]/8 flex items-center justify-center">
                 <Icon className="w-4 h-4 text-[#8B0000]" />
@@ -3183,12 +3345,12 @@ function MemberProfileScreen({ lang, push, pop }: { lang: Lang; push: (s: Screen
           ))}
         </Card>
         <div className="flex gap-3 mb-4">
-          <button className="flex-1 flex flex-col items-center gap-1.5 p-3 bg-white rounded-xl shadow-card">
+          <button onClick={() => window.open('tel:' + mobile)} className="flex-1 flex flex-col items-center gap-1.5 p-3 bg-white rounded-xl shadow-card">
             <Phone className="w-5 h-5 text-[#8B0000]" />
             <span className="text-[11px] font-semibold text-[#8B0000]">{lang === 'mr' ? 'कॉल' : 'Call'}</span>
           </button>
-          <button className="flex-1 flex flex-col items-center gap-1.5 p-3 bg-white rounded-xl shadow-card">
-            <MessageCircle className="w-5 h-5 text-green-600" />
+          <button onClick={() => window.open('https://wa.me/' + mobile.replace(/\s/g, ''))} className="flex-1 flex flex-col items-center gap-1.5 p-3 bg-white rounded-xl shadow-card">
+            <WhatsAppIcon className="w-5 h-5 text-green-600" />
             <span className="text-[11px] font-semibold text-green-600">{lang === 'mr' ? 'व्हॉट्सॲप' : 'WhatsApp'}</span>
           </button>
           <button className="flex-1 flex flex-col items-center gap-1.5 p-3 bg-white rounded-xl shadow-card">
@@ -3197,14 +3359,16 @@ function MemberProfileScreen({ lang, push, pop }: { lang: Lang; push: (s: Screen
           </button>
         </div>
         <SectionHeader title={lang === 'mr' ? 'योगदान इतिहास' : 'Contribution History'} />
-        {TRANSACTIONS.filter(tx => tx.type === 'income').slice(0, 3).map(tx => (
-          <Card key={tx.id} className="p-3 mb-2 flex items-center gap-3">
+        {myTxs.length === 0 ? (
+          <p className="text-center text-stone-400 text-[13px] py-4">{lang === 'mr' ? 'कोणतेही व्यवहार नाहीत' : 'No transactions yet'}</p>
+        ) : myTxs.slice(0, 5).map((tx, i) => (
+          <Card key={tx._id || tx.id || i} className="p-3 mb-2 flex items-center gap-3">
             <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center">
               <IndianRupee className="w-4 h-4 text-emerald-600" />
             </div>
             <div className="flex-1">
               <p className="text-[13px] font-semibold text-[#1C1917]">{lang === 'mr' ? (tx.festivalMr || tx.festival) : tx.festival}</p>
-              <p className="text-[11px] text-[#78716C]">{lang === 'mr' ? (tx.timeMr || tx.time) : tx.time}</p>
+              <p className="text-[11px] text-[#78716C]">{tx.createdAt ? new Date(tx.createdAt).toLocaleDateString(lang === 'mr' ? 'mr-IN' : 'en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}</p>
             </div>
             <span className="text-[14px] font-bold text-emerald-600">+{fmt(tx.amount)}</span>
           </Card>
@@ -3217,33 +3381,63 @@ function MemberProfileScreen({ lang, push, pop }: { lang: Lang; push: (s: Screen
 // ─── SCREEN: EXPENSES ─────────────────────────────────────────────────────────
 
 const EXPENSE_ICON_MAP: Record<string, { icon: React.ComponentType<{ style?: React.CSSProperties; className?: string }>, bg: string, color: string }> = {
-  'Sound & DJ':  { icon: Volume2,   bg: '#FEE2E2', color: '#DC2626' },
-  'Decoration':  { icon: Flower,    bg: '#FEF3C7', color: '#92400E' },
-  'Mandap':      { icon: HomeIcon,  bg: '#D1FAE5', color: '#065F46' },
-  'Food':        { icon: Utensils,  bg: '#EDE9FE', color: '#5B21B6' },
-  'Lighting':    { icon: Lightbulb, bg: '#FFE4E6', color: '#BE123C' },
+  'Sound & DJ':      { icon: Volume2,   bg: '#FEE2E2', color: '#DC2626' },
+  'Decoration':      { icon: Flower,    bg: '#FEF3C7', color: '#92400E' },
+  'Mandap':          { icon: HomeIcon,  bg: '#D1FAE5', color: '#065F46' },
+  'Food':            { icon: Utensils,  bg: '#EDE9FE', color: '#5B21B6' },
+  'Food & Prasad':   { icon: Utensils,  bg: '#EDE9FE', color: '#5B21B6' },
+  'Lighting':        { icon: Lightbulb, bg: '#FFE4E6', color: '#BE123C' },
+  'Aarti & Puja':    { icon: Sparkles,  bg: '#FEF3C7', color: '#B45309' },
+  'Transportation':  { icon: TrendingUp,bg: '#E0F2FE', color: '#0284C7' },
+  'Printing & Flex': { icon: FileText,  bg: '#F3E8FF', color: '#7E22CE' },
+  'Other':           { icon: TrendingDown, bg: '#FEE2E2', color: '#8B0000' }
 }
 
-function ExpensesScreen({ lang, push, pop, store }: { lang: Lang; push: (s: Screen) => void; pop: () => void; store?: AppStore }) {
+const EXPENSE_CATEGORIES_LIST = [
+  { key: 'Sound & DJ', en: 'Sound & DJ', mr: 'ध्वनी व डीजे', icon: Volume2 },
+  { key: 'Decoration', en: 'Decoration', mr: 'सजावट', icon: Flower },
+  { key: 'Mandap', en: 'Mandap', mr: 'मंडप व्यवस्था', icon: HomeIcon },
+  { key: 'Food & Prasad', en: 'Food & Prasad', mr: 'प्रसाद व भोजन', icon: Utensils },
+  { key: 'Lighting', en: 'Lighting', mr: 'रोषणाई', icon: Lightbulb },
+  { key: 'Aarti & Puja', en: 'Aarti & Puja', mr: 'पूजा व आरती', icon: Sparkles },
+  { key: 'Transportation', en: 'Transportation', mr: 'वाहतूक', icon: TrendingUp },
+  { key: 'Printing & Flex', en: 'Printing & Flex', mr: 'प्रिंटिंग व फ्लेक्स', icon: FileText },
+  { key: 'Other', en: 'Other', mr: 'इतर खर्च', icon: TrendingDown }
+]
+
+function ExpensesScreen({ lang, push, pop, store, onSelectExpense }: { lang: Lang; push: (s: Screen) => void; pop: () => void; store?: AppStore; onSelectExpense?: (e: any) => void }) {
   const [search, setSearch] = useState('')
 
-  const expenses = store?.state.expenses ?? []
-  const filtered = expenses.filter(e =>
-    e.vendor.toLowerCase().includes(search.toLowerCase()) ||
-    e.category.toLowerCase().includes(search.toLowerCase())
-  )
+  const expenses = (store?.state.expenses && store.state.expenses.length > 0) ? store.state.expenses : EXPENSES_DATA
+  
+  const totalExpenseAmount = expenses.reduce((s, e) => s + (Number(e.amount) || 0), 0)
+  const totalBudget = 200000
+  const remainingBudget = Math.max(0, totalBudget - totalExpenseAmount)
+
+  const filtered = expenses.filter(e => {
+    const term = search.toLowerCase().trim()
+    if (!term) return true
+    return (
+      (e.vendor && e.vendor.toLowerCase().includes(term)) ||
+      (e.vendorMr && e.vendorMr.toLowerCase().includes(term)) ||
+      (e.category && e.category.toLowerCase().includes(term)) ||
+      (e.categoryMr && e.categoryMr.toLowerCase().includes(term)) ||
+      (e.festival && e.festival.toLowerCase().includes(term)) ||
+      (e.ref && e.ref.toLowerCase().includes(term))
+    )
+  })
 
   const statusLabel = (s: string) => {
     if (s === 'paid') return { label: lang === 'mr' ? 'भरले' : 'Paid', bg: '#D1FAE5', color: '#065F46' }
     if (s === 'approved') return { label: lang === 'mr' ? 'मंजूर' : 'Approved', bg: '#D1FAE5', color: '#065F46' }
-    return { label: lang === 'mr' ? 'पुस्तिाबित' : 'Pending', bg: '#FEF3C7', color: '#92400E' }
+    if (s === 'submitted') return { label: lang === 'mr' ? 'सादर केले' : 'Submitted', bg: '#DBEAFE', color: '#1D4ED8' }
+    return { label: lang === 'mr' ? 'पुनरावलोकन' : 'Under Review', bg: '#FEF3C7', color: '#92400E' }
   }
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       {/* Header */}
       <div className="flex-shrink-0 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #8B0000 0%, #5C0000 100%)' }}>
-        {/* Mandala + temple watermark */}
         <svg className="absolute right-3 top-2 opacity-15" width="110" height="72" viewBox="0 0 110 72" fill="none">
           <circle cx="75" cy="30" r="28" stroke="white" strokeWidth="0.8" fill="none"/>
           <circle cx="75" cy="30" r="20" stroke="white" strokeWidth="0.6" fill="none"/>
@@ -3261,8 +3455,8 @@ function ExpensesScreen({ lang, push, pop, store }: { lang: Lang; push: (s: Scre
             <ChevronLeft className="w-5 h-5 text-white" />
           </button>
           <div className="flex-1">
-            <h1 className="text-white font-bold text-[22px] devanagari leading-tight">{lang === 'mr' ? 'खर्च' : 'Expenses'}</h1>
-            <p className="text-white/60 text-[12px] devanagari mt-0.5">{lang === 'mr' ? 'प्रत्येक खर्च, पारदर्शक समाजासाठी' : 'Every expense, for a transparent community'}</p>
+            <h1 className="text-white font-bold text-[22px] devanagari leading-tight">{lang === 'mr' ? 'खर्च व्यवस्थापन' : 'Expenses'}</h1>
+            <p className="text-white/70 text-[12px] devanagari mt-0.5">{lang === 'mr' ? 'प्रत्येक खर्च, पारदर्शक समाजासाठी' : 'Every expense, for a transparent community'}</p>
           </div>
           <div className="text-right">
             <p className="text-[#F59E0B] text-[11px] font-semibold devanagari leading-tight">
@@ -3278,27 +3472,37 @@ function ExpensesScreen({ lang, push, pop, store }: { lang: Lang; push: (s: Scre
         </div>
       </div>
 
-      {/* Search */}
-      <div className="flex-shrink-0 bg-white px-4 py-3 flex items-center gap-2 border-b border-stone-100">
-        <div className="flex-1 flex items-center gap-2 bg-stone-50 rounded-2xl px-4 py-2.5 border border-stone-200">
+      {/* Search & Action Bar */}
+      <div className="flex-shrink-0 bg-white px-4 py-2.5 flex items-center gap-2 border-b border-stone-100">
+        <div className="flex-1 flex items-center gap-2 bg-stone-50 rounded-2xl px-4 py-2 border border-stone-200">
           <Search className="w-4 h-4 text-stone-400 flex-shrink-0" />
           <input
             className="flex-1 bg-transparent text-[14px] text-[#1C1917] outline-none placeholder-stone-400 devanagari"
-            placeholder={lang === 'mr' ? 'खर्च शोधा...' : 'Search expenses...'}
+            placeholder={lang === 'mr' ? 'खर्च, विक्रेता किंवा बिल शोधा...' : 'Search expenses, vendor, bill...'}
             value={search}
             onChange={e => setSearch(e.target.value)}
           />
+          {search && (
+            <button onClick={() => setSearch('')}>
+              <X className="w-4 h-4 text-stone-400" />
+            </button>
+          )}
         </div>
-        <button className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ background: '#FEE2E2' }}>
-          <Filter style={{ width: 18, height: 18, color: '#8B0000' }} />
+        <button
+          onClick={() => push('new-expense')}
+          className="h-10 px-3.5 rounded-2xl flex items-center gap-1.5 text-white font-semibold text-[13px] flex-shrink-0 shadow-sm active:scale-95 transition-all"
+          style={{ background: '#8B0000' }}
+        >
+          <Plus className="w-4 h-4" />
+          <span className="devanagari">{lang === 'mr' ? 'नवीन खर्च' : 'Add'}</span>
         </button>
       </div>
 
       <div className="flex-1 overflow-y-auto no-scrollbar bg-[#FFFBF5]">
-        {/* Stats */}
+        {/* Dynamic Stats Cards */}
         <div className="grid grid-cols-2 gap-3 px-4 pt-4 pb-3">
           {/* Total expense */}
-          <div className="bg-white rounded-2xl p-3.5 flex items-start gap-3" style={{ boxShadow: '0 1px 6px rgba(0,0,0,0.07)' }}>
+          <div className="bg-white rounded-2xl p-3.5 flex items-start gap-3 shadow-sm border border-stone-100">
             <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: '#FEE2E2' }}>
               <TrendingDown style={{ width: 20, height: 20, color: '#8B0000' }} />
             </div>
@@ -3309,91 +3513,142 @@ function ExpensesScreen({ lang, push, pop, store }: { lang: Lang; push: (s: Scre
                   <ChevronRight style={{ width: 11, height: 11, color: '#78716C' }} />
                 </button>
               </div>
-              <p className="text-[20px] font-bold text-[#8B0000] leading-tight mt-0.5">₹73,000</p>
-              <p className="text-[10px] text-[#78716C] devanagari leading-tight mt-0.5">{lang === 'mr' ? 'या वर्षातील एकूण खर्च' : 'Total spent this year'}</p>
+              <p className="text-[19px] font-bold text-[#8B0000] leading-tight mt-0.5">₹{totalExpenseAmount.toLocaleString('en-IN')}</p>
+              <p className="text-[10px] text-[#78716C] devanagari leading-tight mt-0.5">{lang === 'mr' ? `${expenses.length} नोंदी नोंदवल्या` : `${expenses.length} records active`}</p>
             </div>
           </div>
           {/* Budget remaining */}
-          <div className="bg-white rounded-2xl p-3.5 flex items-start gap-3" style={{ boxShadow: '0 1px 6px rgba(0,0,0,0.07)' }}>
+          <div className="bg-white rounded-2xl p-3.5 flex items-start gap-3 shadow-sm border border-stone-100">
             <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: '#D1FAE5' }}>
               <Wallet style={{ width: 20, height: 20, color: '#059669' }} />
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between">
-                <p className="text-[11px] text-[#78716C] devanagari">{lang === 'mr' ? 'बजेट' : 'Budget'}</p>
+                <p className="text-[11px] text-[#78716C] devanagari">{lang === 'mr' ? 'उर्वरित बजेट' : 'Budget Left'}</p>
                 <button className="w-5 h-5 rounded-full border border-stone-200 flex items-center justify-center">
                   <ChevronRight style={{ width: 11, height: 11, color: '#78716C' }} />
                 </button>
               </div>
-              <p className="text-[20px] font-bold text-emerald-600 leading-tight mt-0.5">₹54,300</p>
-              <p className="text-[10px] text-[#78716C] devanagari leading-tight mt-0.5">{lang === 'mr' ? 'उर्वरित रक्कम' : 'Remaining balance'}</p>
+              <p className="text-[19px] font-bold text-emerald-600 leading-tight mt-0.5">₹{remainingBudget.toLocaleString('en-IN')}</p>
+              <p className="text-[10px] text-[#78716C] devanagari leading-tight mt-0.5">{lang === 'mr' ? 'बजेट: ₹२,००,०००' : 'Budget: ₹2,00,000'}</p>
             </div>
           </div>
         </div>
 
         {/* Section header */}
         <div className="flex items-center justify-between px-4 mb-2">
-          <h2 className="text-[16px] font-bold text-[#1C1917] devanagari">{lang === 'mr' ? 'खर्च यादी' : 'Expense List'}</h2>
-          <button className="flex items-center gap-1 text-[12px] text-[#78716C] devanagari">
-            {lang === 'mr' ? 'नवीनतम' : 'Newest'} <ChevronDown className="w-3.5 h-3.5" />
-          </button>
+          <div className="flex items-center gap-2">
+            <h2 className="text-[15px] font-bold text-[#1C1917] devanagari">{lang === 'mr' ? 'खर्च यादी' : 'Expense List'}</h2>
+            <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-[#8B0000]/10 text-[#8B0000]">
+              {filtered.length}
+            </span>
+          </div>
+          <p className="text-[11px] text-[#78716C] devanagari">
+            {lang === 'mr' ? 'रिअल-टाइम अपडेट' : 'Real-time updated'}
+          </p>
         </div>
 
         {/* Expense list */}
-        <div className="px-4 flex flex-col gap-2 pb-24">
-          {filtered.map(e => {
-            const iconDef = EXPENSE_ICON_MAP[e.category] ?? { icon: TrendingDown, bg: '#FEE2E2', color: '#8B0000' }
-            const IconComp = iconDef.icon
-            const st = statusLabel(e.status)
-            return (
-              <div key={e.id} className="bg-white rounded-2xl px-4 py-3.5 flex items-start gap-3"
-                style={{ boxShadow: '0 1px 6px rgba(0,0,0,0.07)' }}>
-                {/* Category icon */}
-                <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 mt-0.5"
-                  style={{ background: iconDef.bg }}>
-                  <IconComp style={{ width: 22, height: 22, color: iconDef.color }} />
-                </div>
-                {/* Content */}
-                <div className="flex-1 min-w-0" onClick={() => push('expense-detail')}>
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1 min-w-0 pr-2">
-                      <p className="font-bold text-[15px] text-[#1C1917] leading-tight">{lang === 'mr' ? (e.vendorMr || e.vendor) : e.vendor}</p>
-                      <p className="text-[12px] text-[#78716C] mt-0.5">{lang === 'mr' ? (e.categoryMr || e.category) : e.category}</p>
+        <div className="px-4 flex flex-col gap-2.5 pb-28">
+          {filtered.length === 0 ? (
+            <div className="bg-white rounded-2xl p-8 text-center border border-dashed border-stone-200">
+              <TrendingDown className="w-10 h-10 text-stone-300 mx-auto mb-2" />
+              <p className="text-[14px] font-bold text-[#1C1917] devanagari">{lang === 'mr' ? 'कोणताही खर्च सापडला नाही' : 'No expenses found'}</p>
+              <p className="text-[12px] text-[#78716C] mt-1 devanagari">{lang === 'mr' ? 'नवीन खर्च नोंदवण्यासाठी खालील बटणावर क्लिक करा' : 'Tap Add New Expense to record an entry'}</p>
+              <button
+                onClick={() => push('new-expense')}
+                className="mt-4 px-4 py-2 bg-[#8B0000] text-white text-[13px] font-semibold rounded-xl inline-flex items-center gap-1.5"
+              >
+                <Plus className="w-4 h-4" />
+                {lang === 'mr' ? 'नवीन खर्च जोडा' : 'Add New Expense'}
+              </button>
+            </div>
+          ) : (
+            filtered.map((e: any) => {
+              const iconDef = EXPENSE_ICON_MAP[e.category] ?? { icon: TrendingDown, bg: '#FEE2E2', color: '#8B0000' }
+              const IconComp = iconDef.icon
+              const st = statusLabel(e.status)
+              const hasBill = Boolean(e.billDocument || e.billUrl)
+              return (
+                <div
+                  key={e.id || e._id}
+                  onClick={() => {
+                    onSelectExpense?.(e)
+                    push('expense-detail')
+                  }}
+                  className="bg-white rounded-2xl p-3.5 flex items-start gap-3 border border-stone-100 shadow-sm hover:border-[#8B0000]/30 transition-all cursor-pointer active:scale-[0.99]"
+                >
+                  {/* Category icon */}
+                  <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 mt-0.5"
+                    style={{ background: iconDef.bg }}>
+                    <IconComp style={{ width: 22, height: 22, color: iconDef.color }} />
+                  </div>
+                  {/* Content */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-[14.5px] text-[#1C1917] leading-snug truncate">
+                          {lang === 'mr' ? (e.vendorMr || e.vendor) : e.vendor}
+                        </p>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <span className="text-[11.5px] font-medium text-[#78716C]">
+                            {lang === 'mr' ? (e.categoryMr || e.category) : e.category}
+                          </span>
+                          {e.festival && (
+                            <>
+                              <span className="text-stone-300">•</span>
+                              <span className="text-[11px] text-amber-800 font-medium truncate">
+                                {lang === 'mr' ? (e.festivalMr || e.festival) : e.festival}
+                              </span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <p className="text-[15.5px] font-bold text-[#8B0000]">₹{Number(e.amount).toLocaleString('en-IN')}</p>
+                        <span className="text-[10.5px] text-[#78716C] block">
+                          {lang === 'mr' ? (e.method === 'Cheque' ? 'धनादेश' : e.method === 'Cash' ? 'रोख' : e.method) : e.method}
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1 flex-shrink-0">
-                      <p className="text-[16px] font-bold text-[#8B0000]">₹{(e.amount).toLocaleString('en-IN')}</p>
-                      <ChevronRight style={{ width: 14, height: 14, color: '#D1C4C4' }} />
+
+                    <div className="flex items-center flex-wrap gap-1.5 mt-2.5 pt-2 border-t border-stone-50">
+                      {/* Status badge */}
+                      <span className="px-2 py-0.5 rounded-full text-[10.5px] font-semibold devanagari"
+                        style={{ background: st.bg, color: st.color }}>
+                        {st.label}
+                      </span>
+
+                      {/* Bill attached badge */}
+                      {hasBill && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10.5px] font-semibold bg-amber-50 text-amber-800 border border-amber-200/60">
+                          <Receipt className="w-3 h-3 text-amber-600" />
+                          <span>{lang === 'mr' ? 'बिल जोडले' : 'Bill Attached'}</span>
+                        </span>
+                      )}
+
+                      <div className="flex items-center gap-1 text-[11px] text-[#78716C] ml-auto">
+                        <Calendar style={{ width: 11, height: 11, color: '#A8A29E' }} />
+                        <span>{lang === 'mr' ? (e.dateMr || e.date) : e.date}</span>
+                        <ChevronRight style={{ width: 13, height: 13, color: '#D1C4C4', marginLeft: 2 }} />
+                      </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 mt-2">
-                    {/* Status badge */}
-                    <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold devanagari"
-                      style={{ background: st.bg, color: st.color }}>
-                      {st.label}
-                    </span>
-                    <span className="text-[11px] text-[#78716C]">{lang === 'mr' ? (e.method === 'Cheque' ? 'धनादेश' : e.method === 'Cash' ? 'रोख' : e.method) : e.method}</span>
-                    <div className="flex items-center gap-1">
-                      <Calendar style={{ width: 11, height: 11, color: '#78716C' }} />
-                      <span className="text-[11px] text-[#78716C]">{lang === 'mr' ? (e.dateMr || e.date) : e.date}</span>
-                    </div>
-                    <div className="flex-1" />
-                    <button className="p-1">
-                      <MoreVertical style={{ width: 14, height: 14, color: '#C7B9B9' }} />
-                    </button>
-                  </div>
                 </div>
-              </div>
-            )
-          })}
+              )
+            })
+          )}
         </div>
       </div>
 
-      {/* FAB */}
+      {/* Floating Action Button */}
       <div className="absolute bottom-20 right-4">
-        <button onClick={() => push('new-expense')}
-          className="flex items-center gap-2 px-5 py-3.5 rounded-full text-white font-semibold text-[14px] devanagari"
-          style={{ background: '#8B0000', boxShadow: '0 4px 16px rgba(139,0,0,0.45)' }}>
-          <Plus className="w-4 h-4" />
+        <button
+          onClick={() => push('new-expense')}
+          className="flex items-center gap-2 px-5 py-3.5 rounded-full text-white font-semibold text-[14px] devanagari shadow-lg hover:shadow-xl transition-all active:scale-95"
+          style={{ background: 'linear-gradient(135deg, #8B0000 0%, #A30000 100%)', boxShadow: '0 6px 20px rgba(139,0,0,0.4)' }}
+        >
+          <Plus className="w-5 h-5" />
           {lang === 'mr' ? 'नवा खर्च जोडा' : 'Add New Expense'}
         </button>
       </div>
@@ -3403,72 +3658,584 @@ function ExpensesScreen({ lang, push, pop, store }: { lang: Lang; push: (s: Scre
 
 // ─── SCREEN: NEW EXPENSE ──────────────────────────────────────────────────────
 
-function NewExpenseScreen({ lang, push, pop, store }: { lang: Lang; push: (s: Screen) => void; pop: () => void; store?: AppStore }) {
-  const t = TR[lang]
-  const categories = [t.decoration, t.sound, t.lighting, t.mandap, t.prasad, t.aarti, t.transportation, t.printing, t.food, t.other]
-  const [cat, setCat] = useState(t.decoration)
-  const workflowSteps = [t.draft, t.submitted, t.underReview, t.approved]
+function NewExpenseScreen({ lang, push, pop, store, onSelectExpense, onComplete }: { lang: Lang; push: (s: Screen) => void; pop: () => void; store?: AppStore; onSelectExpense?: (e: any) => void; onComplete?: () => void }) {
+  const vendorSuggestions = [
+    { en: 'Om Sound Systems', mr: 'ओम साउंड सिस्टिम्स', cat: 'Sound & DJ' },
+    { en: 'Shri Decor Works', mr: 'श्री डेकोर वर्क्स', cat: 'Decoration' },
+    { en: 'Sai Mandap House', mr: 'साई मंडप हाउस', cat: 'Mandap' },
+    { en: 'Prasanna Catering', mr: 'प्रसन्न कॅटरर्स', cat: 'Food & Prasad' },
+    { en: 'Datta Electricals', mr: 'दत्त इलेक्ट्रिकल्स', cat: 'Lighting' },
+    { en: 'Shiv Flower Mart', mr: 'शिव फ्लॉवर मार्ट', cat: 'Decoration' },
+    { en: 'Guruji Dakshina', mr: 'गुरुजी दक्षिणा व पूजा साहित्य', cat: 'Aarti & Puja' }
+  ]
+
+  const festivals = (store?.state.festivals && store.state.festivals.length > 0) ? store.state.festivals : FESTIVALS
+
+  // Form State
+  const [vendor, setVendor] = useState('')
+  const [vendorMr, setVendorMr] = useState('')
+  const [amount, setAmount] = useState('')
+  const [cat, setCat] = useState('Sound & DJ')
+  const [catMr, setCatMr] = useState('ध्वनी व डीजे')
+  const [festival, setFestival] = useState(festivals[0]?.name || 'Ganeshotsav 2026')
+  const [festivalMr, setFestivalMr] = useState(festivals[0]?.nameMr || 'गणेशोत्सव २०२६')
+  const [method, setMethod] = useState<'Cash' | 'UPI' | 'Cheque' | 'NEFT'>('Cash')
+  const [reference, setReference] = useState('')
+  const [expenseDate, setExpenseDate] = useState(new Date().toISOString().split('T')[0])
+  const [notes, setNotes] = useState('')
+
+  // Bill Document Upload State
+  const [billDoc, setBillDoc] = useState<{
+    name: string
+    size: string
+    type: string
+    dataUrl: string
+  } | null>(null)
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [errorMsg, setErrorMsg] = useState('')
+  const [successToast, setSuccessToast] = useState(false)
+
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const addQuickAmount = (val: number) => {
+    const current = Number(amount) || 0
+    setAmount(String(current + val))
+  }
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const sizeStr = file.size > 1024 * 1024
+      ? (file.size / (1024 * 1024)).toFixed(1) + ' MB'
+      : Math.round(file.size / 1024) + ' KB'
+
+    const reader = new FileReader()
+    reader.onload = () => {
+      const dataUrl = reader.result as string
+      setBillDoc({
+        name: file.name,
+        size: sizeStr,
+        type: file.type,
+        dataUrl
+      })
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const handleRemoveBill = () => {
+    setBillDoc(null)
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
+  const handleSubmit = async () => {
+    setErrorMsg('')
+    if (!vendor.trim()) {
+      setErrorMsg(lang === 'mr' ? 'कृपया विक्रेत्याचे / खर्चदाराचे नाव टाका.' : 'Please enter vendor or payee name.')
+      return
+    }
+    const numAmount = Number(amount)
+    if (!amount || isNaN(numAmount) || numAmount <= 0) {
+      setErrorMsg(lang === 'mr' ? 'कृपया वैध रक्कम प्रविष्ट करा.' : 'Please enter a valid amount.')
+      return
+    }
+
+    setIsSubmitting(true)
+    try {
+      const methodMrMap: Record<string, string> = {
+        'Cash': 'रोख',
+        'UPI': 'UPI',
+        'Cheque': 'धनादेश',
+        'NEFT': 'NEFT / बँक'
+      }
+
+      const dateObj = new Date(expenseDate || Date.now())
+      const formattedDate = dateObj.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+      const formattedDateMr = dateObj.toLocaleDateString('mr-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+
+      const newExpData = {
+        id: 'EXP-' + Date.now(),
+        vendor: vendor.trim(),
+        vendorMr: vendorMr.trim() || vendor.trim(),
+        category: cat,
+        categoryMr: catMr,
+        amount: numAmount,
+        method: method,
+        methodMr: methodMrMap[method] || method,
+        date: formattedDate,
+        dateMr: formattedDateMr,
+        festival: festival,
+        festivalMr: festivalMr,
+        ref: reference.trim() || ('REF-' + Math.floor(1000 + Math.random() * 9000)),
+        notes: notes.trim(),
+        status: 'approved' as const,
+        billDocument: billDoc?.dataUrl || '',
+        billName: billDoc?.name || '',
+        billType: billDoc?.type || '',
+        billSize: billDoc?.size || '',
+        submittedBy: store?.state.currentUser?.name || (lang === 'mr' ? 'सिद्धार्थ कदम' : 'Siddharth Kadam'),
+        createdAt: new Date().toISOString()
+      }
+
+      if (store?.addExpense) {
+        const saved = await store.addExpense(newExpData)
+        if (onSelectExpense) onSelectExpense(saved || newExpData)
+      } else if (onSelectExpense) {
+        onSelectExpense(newExpData)
+      }
+
+      setSuccessToast(true)
+      setTimeout(() => {
+        if (onComplete) {
+          onComplete()
+        } else {
+          pop()
+        }
+      }, 900)
+    } catch (err: any) {
+      console.error(err)
+      setErrorMsg(lang === 'mr' ? 'खर्च नोंदवताना त्रुटी आली. कृपया पुन्हा प्रयत्न करा.' : 'Failed to save expense. Please retry.')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const workflowSteps = [
+    { en: 'Draft', mr: 'मसुदा' },
+    { en: 'Submitted', mr: 'सादर' },
+    { en: 'Approved', mr: 'मंजूर' },
+    { en: 'Audited', mr: 'लेखापरीक्षित' }
+  ]
+
   return (
-    <div className="flex-1 flex flex-col">
-      <AppHeader title={lang === 'mr' ? 'नवीन खर्च' : 'New Expense'} onBack={pop} lang={lang} />
-      <div className="flex-1 overflow-y-auto no-scrollbar bg-[#FFFBF5] px-4 py-5">
-        {/* Approval workflow tracker */}
-        <Card className="p-4 mb-4">
-          <p className="text-[12px] font-semibold text-[#78716C] mb-3 uppercase tracking-wide">{t.approvalWorkflow}</p>
+    <div className="flex-1 flex flex-col bg-[#FFFBF5] relative overflow-hidden">
+      <AppHeader title={lang === 'mr' ? 'नवा खर्च नोंदवा' : 'New Expense Entry'} onBack={pop} lang={lang} />
+      
+      {/* Toast */}
+      {successToast && (
+        <div className="absolute top-16 left-4 right-4 z-50 bg-emerald-600 text-white px-4 py-3 rounded-2xl shadow-xl flex items-center gap-3 animate-fade-in">
+          <CheckCircle2 className="w-6 h-6 flex-shrink-0" />
+          <div className="flex-1">
+            <p className="font-bold text-[14px]">{lang === 'mr' ? 'खर्च यशस्वीरित्या नोंदवला गेला!' : 'Expense recorded successfully!'}</p>
+            <p className="text-[11px] text-emerald-100">{lang === 'mr' ? 'डॅशबोर्ड आणि खर्च यादी रिअल-टाइम अद्ययावत झाली.' : 'Updated dashboard & list in real time.'}</p>
+          </div>
+        </div>
+      )}
+
+      <div className="flex-1 overflow-y-auto no-scrollbar px-4 py-4 pb-24">
+        {/* Workflow tracker banner */}
+        <div className="bg-white rounded-2xl p-3.5 mb-4 shadow-sm border border-stone-100">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-[11px] font-bold text-[#8B0000] uppercase tracking-wider devanagari">
+              {lang === 'mr' ? 'खर्च मान्यता व नोंद प्रक्रिया' : 'Expense Approval & Recording'}
+            </p>
+            <span className="text-[11px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full font-semibold">
+              {lang === 'mr' ? 'थेट नोंद' : 'Direct Record'}
+            </span>
+          </div>
           <div className="flex items-center">
             {workflowSteps.map((step, i) => (
-              <div key={step} className="flex items-center flex-1 last:flex-none">
-                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0 ${i === 0 ? 'bg-[#8B0000] text-white' : 'bg-stone-100 text-[#78716C]'}`}>
-                  {i === 0 ? <Check className="w-3.5 h-3.5" /> : i + 1}
+              <div key={step.en} className="flex items-center flex-1 last:flex-none">
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 ${i <= 1 ? 'bg-[#8B0000] text-white' : 'bg-stone-100 text-[#78716C]'}`}>
+                  {i === 0 ? <Check className="w-3 h-3" /> : i + 1}
                 </div>
-                {i < workflowSteps.length - 1 && <div className="flex-1 h-0.5 bg-stone-100 mx-1" />}
+                {i < workflowSteps.length - 1 && (
+                  <div className={`flex-1 h-0.5 mx-1 ${i === 0 ? 'bg-[#8B0000]' : 'bg-stone-100'}`} />
+                )}
               </div>
             ))}
           </div>
-          <div className="flex justify-between mt-1.5">
-            {workflowSteps.map((step, i) => (
-              <span key={step} className={`text-[9px] font-medium ${i === 0 ? 'text-[#8B0000]' : 'text-[#78716C]'}`}>{step}</span>
+          <div className="flex justify-between mt-1 text-[10px] text-[#78716C] devanagari font-medium">
+            {workflowSteps.map(step => (
+              <span key={step.en}>{lang === 'mr' ? step.mr : step.en}</span>
             ))}
           </div>
-        </Card>
+        </div>
+
+        {/* Error Alert */}
+        {errorMsg && (
+          <div className="bg-red-50 border border-red-200 rounded-2xl p-3 mb-4 flex items-center gap-2.5 text-red-700 text-[13px] devanagari">
+            <AlertCircle className="w-5 h-5 flex-shrink-0 text-red-600" />
+            <span className="font-medium">{errorMsg}</span>
+          </div>
+        )}
+
         <div className="flex flex-col gap-4">
-          {[
-            { label: t.vendor, placeholder: lang === 'mr' ? 'ओम साउंड सिस्टीम्स' : 'Om Sound Systems', icon: Building2 },
-            { label: t.amount, placeholder: '25000', icon: IndianRupee },
-            { label: t.reference, placeholder: lang === 'mr' ? 'CHQ-004521 (वैकल्पिक)' : 'CHQ-004521 (optional)', icon: FileText },
-          ].map(({ label, placeholder, icon: Icon }) => (
-            <div key={label}>
-              <label className="text-[13px] font-semibold text-[#1C1917] mb-2 block">{label}</label>
-              <div className="flex items-center gap-3 bg-white border border-stone-200 rounded-xl px-4 h-12 focus-within:border-[#8B0000]">
-                <Icon className="w-4 h-4 text-stone-400" />
-                <input placeholder={placeholder} className="flex-1 text-[14px] outline-none text-[#1C1917] placeholder:text-stone-400 bg-transparent" />
+          {/* Vendor Name */}
+          <div className="bg-white rounded-2xl p-4 shadow-sm border border-stone-100">
+            <label className="text-[13px] font-bold text-[#1C1917] mb-1.5 flex items-center justify-between">
+              <span className="devanagari">{lang === 'mr' ? 'विक्रेता / खर्च कोणाला दिला? *' : 'Vendor / Payee Name *'}</span>
+              <span className="text-[11px] text-stone-400 font-normal">{lang === 'mr' ? 'आवश्यक' : 'Required'}</span>
+            </label>
+            <div className="flex items-center gap-3 bg-stone-50 border border-stone-200 rounded-xl px-3.5 h-12 focus-within:border-[#8B0000] focus-within:bg-white transition-colors">
+              <Building2 className="w-5 h-5 text-stone-400 flex-shrink-0" />
+              <input
+                value={vendor}
+                onChange={e => {
+                  setVendor(e.target.value)
+                  if (!vendorMr) setVendorMr(e.target.value)
+                }}
+                placeholder={lang === 'mr' ? 'उदा. ओम साउंड सिस्टीम्स, श्री डेकोर' : 'e.g. Om Sound Systems, Shri Decor'}
+                className="flex-1 text-[14px] outline-none text-[#1C1917] placeholder:text-stone-400 bg-transparent devanagari font-medium"
+              />
+              {vendor && (
+                <button type="button" onClick={() => { setVendor(''); setVendorMr(''); }}>
+                  <X className="w-4 h-4 text-stone-400 hover:text-stone-600" />
+                </button>
+              )}
+            </div>
+
+            {/* Quick Vendor Suggestions */}
+            <div className="mt-2.5">
+              <p className="text-[11px] text-[#78716C] mb-1.5 devanagari">{lang === 'mr' ? 'वारंवार वापरलेले विक्रेते:' : 'Frequent vendors:'}</p>
+              <div className="flex flex-wrap gap-1.5">
+                {vendorSuggestions.map(v => (
+                  <button
+                    key={v.en}
+                    type="button"
+                    onClick={() => {
+                      setVendor(v.en)
+                      setVendorMr(v.mr)
+                      setCat(v.cat)
+                      const matched = EXPENSE_CATEGORIES_LIST.find(c => c.key === v.cat)
+                      if (matched) setCatMr(matched.mr)
+                    }}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors devanagari ${vendor === v.en ? 'bg-[#8B0000] text-white' : 'bg-stone-100 text-stone-600 hover:bg-stone-200'}`}
+                  >
+                    {lang === 'mr' ? v.mr : v.en}
+                  </button>
+                ))}
               </div>
             </div>
-          ))}
-          <div>
-            <label className="text-[13px] font-semibold text-[#1C1917] mb-2 block">{t.category}</label>
-            <div className="flex flex-wrap gap-2">
-              {categories.map(c => (
-                <button key={c} onClick={() => setCat(c)}
-                  className={`px-3 py-1.5 rounded-full text-[12px] font-semibold transition-colors ${cat === c ? 'bg-[#8B0000] text-white' : 'bg-white border border-stone-200 text-[#78716C]'}`}>
-                  {c}
+          </div>
+
+          {/* Amount Input */}
+          <div className="bg-white rounded-2xl p-4 shadow-sm border border-stone-100">
+            <label className="text-[13px] font-bold text-[#1C1917] mb-1.5 block devanagari">
+              {lang === 'mr' ? 'खर्चाची रक्कम *' : 'Expense Amount (₹) *'}
+            </label>
+            <div className="flex items-center gap-3 bg-stone-50 border-2 border-[#8B0000]/30 rounded-xl px-4 h-14 focus-within:border-[#8B0000] focus-within:bg-white transition-colors">
+              <IndianRupee className="w-6 h-6 text-[#8B0000] flex-shrink-0" />
+              <input
+                type="number"
+                value={amount}
+                onChange={e => setAmount(e.target.value)}
+                placeholder="0"
+                className="flex-1 text-[24px] font-bold outline-none text-[#8B0000] placeholder:text-stone-300 bg-transparent"
+              />
+              {amount && (
+                <button type="button" onClick={() => setAmount('')}>
+                  <X className="w-4 h-4 text-stone-400" />
+                </button>
+              )}
+            </div>
+
+            {/* Quick Amount Presets */}
+            <div className="flex items-center gap-2 mt-3 overflow-x-auto no-scrollbar py-0.5">
+              {[500, 1000, 5000, 10000, 25000].map(amt => (
+                <button
+                  key={amt}
+                  type="button"
+                  onClick={() => addQuickAmount(amt)}
+                  className="px-2.5 py-1 rounded-xl bg-amber-50 text-amber-800 text-[11px] font-bold border border-amber-200/80 hover:bg-amber-100 flex-shrink-0 transition-colors"
+                >
+                  +₹{amt.toLocaleString('en-IN')}
                 </button>
               ))}
             </div>
           </div>
-          {/* Bill upload */}
-          <div>
-            <label className="text-[13px] font-semibold text-[#1C1917] mb-2 block">{t.uploadBill}</label>
-            <div className="border-2 border-dashed border-stone-200 rounded-xl p-5 flex flex-col items-center gap-2 bg-white">
-              <Upload className="w-8 h-8 text-stone-400" />
-              <p className="text-[13px] text-[#78716C] text-center">{lang === 'mr' ? 'बिल / पावती अपलोड करा' : 'Upload bill or receipt'}</p>
-              <p className="text-[11px] text-stone-400">PDF, JPG, PNG</p>
+
+          {/* Category Selector */}
+          <div className="bg-white rounded-2xl p-4 shadow-sm border border-stone-100">
+            <label className="text-[13px] font-bold text-[#1C1917] mb-2 block devanagari">
+              {lang === 'mr' ? 'खर्च वर्ग / श्रेणी' : 'Expense Category'}
+            </label>
+            <div className="grid grid-cols-3 gap-2">
+              {EXPENSE_CATEGORIES_LIST.map(c => {
+                const IconComp = c.icon
+                const isSelected = cat === c.key
+                return (
+                  <button
+                    key={c.key}
+                    type="button"
+                    onClick={() => {
+                      setCat(c.key)
+                      setCatMr(c.mr)
+                    }}
+                    className={`p-2 rounded-xl flex flex-col items-center gap-1.5 border text-center transition-all ${isSelected ? 'bg-[#8B0000] text-white border-[#8B0000] shadow-sm' : 'bg-stone-50 border-stone-200 text-stone-700 hover:bg-stone-100'}`}
+                  >
+                    <IconComp className={`w-4 h-4 ${isSelected ? 'text-white' : 'text-[#8B0000]'}`} />
+                    <span className="text-[11px] font-medium leading-tight devanagari">
+                      {lang === 'mr' ? c.mr : c.en}
+                    </span>
+                  </button>
+                )
+              })}
             </div>
+          </div>
+
+          {/* Festival & Payment Method */}
+          <div className="bg-white rounded-2xl p-4 shadow-sm border border-stone-100 flex flex-col gap-3.5">
+            {/* Festival */}
+            <div>
+              <label className="text-[12px] font-bold text-[#1C1917] mb-1.5 block devanagari">
+                {lang === 'mr' ? 'संबंधित उत्सव' : 'Associated Festival'}
+              </label>
+              <select
+                value={festival}
+                onChange={e => {
+                  setFestival(e.target.value)
+                  const f = festivals.find(fest => fest.name === e.target.value)
+                  if (f) setFestivalMr(f.nameMr || f.name)
+                }}
+                className="w-full bg-stone-50 border border-stone-200 rounded-xl px-3.5 h-11 text-[13.5px] text-[#1C1917] outline-none font-medium devanagari"
+              >
+                {festivals.map((f: any) => (
+                  <option key={f.id || f._id || f.name} value={f.name}>
+                    {lang === 'mr' ? (f.nameMr || f.name) : f.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Payment Method */}
+            <div>
+              <label className="text-[12px] font-bold text-[#1C1917] mb-1.5 block devanagari">
+                {lang === 'mr' ? 'पेमेंट पद्धत' : 'Payment Method'}
+              </label>
+              <div className="grid grid-cols-4 gap-2">
+                {[
+                  { key: 'Cash', mr: 'रोख', en: 'Cash' },
+                  { key: 'UPI', mr: 'UPI', en: 'UPI' },
+                  { key: 'Cheque', mr: 'धनादेश', en: 'Cheque' },
+                  { key: 'NEFT', mr: 'NEFT', en: 'Bank' }
+                ].map(m => (
+                  <button
+                    key={m.key}
+                    type="button"
+                    onClick={() => setMethod(m.key as any)}
+                    className={`py-2 rounded-xl text-[12px] font-bold transition-all devanagari border ${method === m.key ? 'bg-[#8B0000] text-white border-[#8B0000]' : 'bg-stone-50 border-stone-200 text-stone-600'}`}
+                  >
+                    {lang === 'mr' ? m.mr : m.en}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Reference & Date */}
+            <div className="grid grid-cols-2 gap-3 pt-1">
+              <div>
+                <label className="text-[11.5px] font-semibold text-[#1C1917] mb-1 block devanagari">
+                  {lang === 'mr' ? 'बिल / चेक क्र. (ऐच्छिक)' : 'Ref / Bill No. (opt)'}
+                </label>
+                <div className="flex items-center gap-2 bg-stone-50 border border-stone-200 rounded-xl px-3 h-10">
+                  <FileText className="w-4 h-4 text-stone-400 flex-shrink-0" />
+                  <input
+                    value={reference}
+                    onChange={e => setReference(e.target.value)}
+                    placeholder="CHQ-00451"
+                    className="flex-1 text-[12px] outline-none text-[#1C1917] bg-transparent"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[11.5px] font-semibold text-[#1C1917] mb-1 block devanagari">
+                  {lang === 'mr' ? 'खर्चाची तारीख' : 'Expense Date'}
+                </label>
+                <div className="flex items-center gap-2 bg-stone-50 border border-stone-200 rounded-xl px-3 h-10">
+                  <Calendar className="w-4 h-4 text-stone-400 flex-shrink-0" />
+                  <input
+                    type="date"
+                    value={expenseDate}
+                    onChange={e => setExpenseDate(e.target.value)}
+                    className="flex-1 text-[12px] outline-none text-[#1C1917] bg-transparent"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ── BILL DOCUMENTS UPLOAD SECTION ── */}
+          <div className="bg-white rounded-2xl p-4 shadow-sm border border-stone-100">
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-[13px] font-bold text-[#1C1917] flex items-center gap-2 devanagari">
+                <Receipt className="w-4 h-4 text-[#8B0000]" />
+                <span>{lang === 'mr' ? 'बिल / पावती कागदपत्र अपलोड' : 'Upload Bill / Receipt Document'}</span>
+              </label>
+              <span className="text-[10px] text-stone-400 font-medium">PDF, JPG, PNG</span>
+            </div>
+
+            {/* Hidden native file input */}
+            <input
+              type="file"
+              ref={fileInputRef}
+              accept="image/*,application/pdf"
+              onChange={handleFileChange}
+              className="hidden"
+            />
+
+            {!billDoc ? (
+              /* Dropzone when no file selected */
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                className="border-2 border-dashed border-[#8B0000]/25 hover:border-[#8B0000] rounded-2xl p-5 flex flex-col items-center justify-center gap-2 bg-[#8B0000]/5 hover:bg-[#8B0000]/10 transition-all cursor-pointer text-center"
+              >
+                <div className="w-12 h-12 rounded-full bg-white shadow-sm flex items-center justify-center text-[#8B0000]">
+                  <Upload className="w-6 h-6" />
+                </div>
+                <div>
+                  <p className="text-[13.5px] font-bold text-[#1C1917] devanagari">
+                    {lang === 'mr' ? 'बिल / पावती येथे अपलोड करा' : 'Click to Upload Bill Document'}
+                  </p>
+                  <p className="text-[11px] text-[#78716C] devanagari mt-0.5">
+                    {lang === 'mr' ? 'कॅमेऱ्यातून फोटो काढा किंवा फाइल निवडा' : 'Take photo with camera or browse file'}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="px-3 py-1 bg-white rounded-lg text-[11px] font-bold text-[#8B0000] shadow-xs flex items-center gap-1">
+                    <Camera className="w-3.5 h-3.5" />
+                    {lang === 'mr' ? 'कॅमेरा' : 'Camera'}
+                  </span>
+                  <span className="px-3 py-1 bg-white rounded-lg text-[11px] font-bold text-stone-700 shadow-xs flex items-center gap-1">
+                    <Folder className="w-3.5 h-3.5" />
+                    {lang === 'mr' ? 'गॅलरी / फाइल' : 'Files'}
+                  </span>
+                </div>
+              </div>
+            ) : (
+              /* Attached Document Card */
+              <div className="border border-emerald-200 bg-emerald-50/50 rounded-2xl p-3.5 flex items-center gap-3">
+                {/* Thumbnail or Icon */}
+                {billDoc.type.startsWith('image/') ? (
+                  <div
+                    onClick={() => setIsPreviewOpen(true)}
+                    className="w-14 h-14 rounded-xl overflow-hidden bg-white border border-emerald-200 flex-shrink-0 cursor-pointer relative group"
+                  >
+                    <img src={billDoc.dataUrl} alt="Bill Preview" className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Eye className="w-4 h-4 text-white" />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="w-14 h-14 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-700 flex-shrink-0">
+                    <FileText className="w-7 h-7" />
+                  </div>
+                )}
+
+                {/* File details */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                    <p className="font-bold text-[13px] text-[#1C1917] truncate">{billDoc.name}</p>
+                  </div>
+                  <p className="text-[11px] text-[#78716C] mt-0.5">{billDoc.size} • {lang === 'mr' ? 'अपलोड तयार' : 'Ready'}</p>
+                  
+                  {/* Action buttons */}
+                  <div className="flex items-center gap-3 mt-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setIsPreviewOpen(true)}
+                      className="text-[11px] font-bold text-[#8B0000] flex items-center gap-1 hover:underline"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                      {lang === 'mr' ? 'कागदपत्र पहा' : 'Preview'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="text-[11px] font-medium text-[#78716C] flex items-center gap-1 hover:underline"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      {lang === 'mr' ? 'बदला' : 'Change'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleRemoveBill}
+                      className="text-[11px] font-medium text-red-600 flex items-center gap-1 hover:underline ml-auto"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      {lang === 'mr' ? 'हटवा' : 'Remove'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Notes / Remarks */}
+          <div className="bg-white rounded-2xl p-4 shadow-sm border border-stone-100">
+            <label className="text-[12px] font-bold text-[#1C1917] mb-1.5 block devanagari">
+              {lang === 'mr' ? 'शेरा / अधिक माहिती (ऐच्छिक)' : 'Notes / Remarks (optional)'}
+            </label>
+            <textarea
+              value={notes}
+              onChange={e => setNotes(e.target.value)}
+              rows={2}
+              placeholder={lang === 'mr' ? 'खर्चाबद्दल विशेष नोंद किंवा साहित्याचा तपशील...' : 'Any details about this expense...'}
+              className="w-full bg-stone-50 border border-stone-200 rounded-xl p-3 text-[13px] text-[#1C1917] outline-none devanagari resize-none"
+            />
           </div>
         </div>
       </div>
-      <div className="px-4 py-3 bg-white border-t border-stone-100">
-        <Btn onClick={() => push('expense-approval')} className="w-full">{lang === 'mr' ? 'खर्च सादर करा' : 'Submit Expense'}</Btn>
+
+      {/* Fullscreen Document Preview Modal */}
+      {isPreviewOpen && billDoc && (
+        <div className="fixed inset-0 z-50 bg-black/80 flex flex-col items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white rounded-3xl overflow-hidden max-w-sm w-full max-h-[85vh] flex flex-col shadow-2xl">
+            <div className="px-4 py-3 bg-stone-900 text-white flex items-center justify-between">
+              <div className="flex items-center gap-2 truncate pr-2">
+                <Receipt className="w-4 h-4 text-amber-400 flex-shrink-0" />
+                <p className="text-[13px] font-bold truncate">{billDoc.name}</p>
+              </div>
+              <button onClick={() => setIsPreviewOpen(false)} className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center text-white">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-auto p-4 bg-stone-100 flex items-center justify-center min-h-[300px]">
+              {billDoc.type.startsWith('image/') ? (
+                <img src={billDoc.dataUrl} alt="Full Bill" className="max-w-full max-h-[65vh] object-contain rounded-lg shadow-md" />
+              ) : (
+                <div className="text-center p-6 bg-white rounded-2xl shadow-sm">
+                  <FileText className="w-16 h-16 text-[#8B0000] mx-auto mb-2" />
+                  <p className="font-bold text-[14px] text-[#1C1917]">{billDoc.name}</p>
+                  <p className="text-[12px] text-stone-500 mt-1">{billDoc.size} • PDF Document</p>
+                </div>
+              )}
+            </div>
+            <div className="p-3 bg-white border-t border-stone-200 flex justify-end">
+              <button
+                onClick={() => setIsPreviewOpen(false)}
+                className="px-5 py-2 bg-[#8B0000] text-white font-bold text-[13px] rounded-xl"
+              >
+                {lang === 'mr' ? 'बंद करा' : 'Close'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bottom Submit Bar */}
+      <div className="px-4 py-3 bg-white border-t border-stone-200 shadow-md">
+        <button
+          onClick={handleSubmit}
+          disabled={isSubmitting}
+          className="w-full py-3.5 px-6 rounded-2xl text-white font-bold text-[15px] devanagari flex items-center justify-center gap-2 shadow-lg transition-all active:scale-[0.98] disabled:opacity-70"
+          style={{ background: 'linear-gradient(135deg, #8B0000 0%, #B91C1C 100%)' }}
+        >
+          {isSubmitting ? (
+            <>
+              <RefreshCw className="w-5 h-5 animate-spin" />
+              <span>{lang === 'mr' ? 'खर्च नोंदवत आहे...' : 'Recording Expense...'}</span>
+            </>
+          ) : (
+            <>
+              <Check className="w-5 h-5" />
+              <span>{lang === 'mr' ? 'खर्च नोंदवा व जतन करा' : 'Submit & Record Expense'}</span>
+            </>
+          )}
+        </button>
       </div>
     </div>
   )
@@ -3476,61 +4243,193 @@ function NewExpenseScreen({ lang, push, pop, store }: { lang: Lang; push: (s: Sc
 
 // ─── SCREEN: EXPENSE DETAIL ───────────────────────────────────────────────────
 
-function ExpenseDetailScreen({ lang, push, pop }: { lang: Lang; push: (s: Screen) => void; pop: () => void }) {
-  const e = EXPENSES_DATA[1]
+function ExpenseDetailScreen({ lang, push, pop, store, expense }: { lang: Lang; push: (s: Screen) => void; pop: () => void; store?: AppStore; expense?: any }) {
+  const e = expense || store?.state.selectedExpense || store?.state.expenses?.[0] || EXPENSES_DATA[0]
   const t = TR[lang]
+  const [previewOpen, setPreviewOpen] = useState(false)
+
+  const iconDef = EXPENSE_ICON_MAP[e.category] ?? { icon: TrendingDown, bg: '#FEE2E2', color: '#8B0000' }
+  const IconComp = iconDef.icon
+
   return (
-    <div className="flex-1 flex flex-col">
+    <div className="flex-1 flex flex-col bg-[#FFFBF5] relative overflow-hidden">
       <AppHeader title={lang === 'mr' ? 'खर्च तपशील' : 'Expense Detail'} onBack={pop} lang={lang} />
-      <div className="flex-1 overflow-y-auto no-scrollbar bg-[#FFFBF5] px-4 py-5">
-        <div className="flex items-center gap-4 mb-5">
-          <div className="w-14 h-14 rounded-2xl bg-[#8B0000]/8 flex items-center justify-center">
-            <TrendingDown className="w-7 h-7 text-[#8B0000]" />
+      <div className="flex-1 overflow-y-auto no-scrollbar px-4 py-5 pb-24">
+        {/* Amount Banner */}
+        <div className="flex items-center gap-4 mb-5 bg-white p-4 rounded-3xl shadow-sm border border-stone-100">
+          <div className="w-16 h-16 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ background: iconDef.bg }}>
+            <IconComp style={{ width: 30, height: 30, color: iconDef.color }} />
           </div>
-          <div>
-            <p className="text-[28px] font-bold text-[#8B0000]">{fmt(e.amount)}</p>
-            <StatusBadge status={e.status} lang={lang} />
+          <div className="flex-1 min-w-0">
+            <p className="text-[28px] font-bold text-[#8B0000] leading-tight">₹{Number(e.amount).toLocaleString('en-IN')}</p>
+            <div className="flex items-center gap-2 mt-1">
+              <StatusBadge status={e.status || 'paid'} lang={lang} />
+              <span className="text-[12px] text-[#78716C]">{lang === 'mr' ? (e.method === 'Cheque' ? 'धनादेश' : e.method === 'Cash' ? 'रोख' : e.method) : e.method}</span>
+            </div>
           </div>
         </div>
+
+        {/* Details Card */}
         <Card className="p-4 mb-4">
           {[
             [t.vendor, lang === 'mr' ? (e.vendorMr || e.vendor) : e.vendor],
             [t.category, lang === 'mr' ? (e.categoryMr || e.category) : e.category],
-            [t.festival, lang === 'mr' ? (e.festivalMr || e.festival) : e.festival],
+            [t.festival, lang === 'mr' ? (e.festivalMr || e.festival) : (e.festival || 'Ganeshotsav 2026')],
             [t.paymentMethod, lang === 'mr' ? (e.method === 'Cheque' ? 'धनादेश' : e.method === 'Cash' ? 'रोख' : e.method) : e.method],
             [t.reference, e.ref || '—'],
             [t.date, lang === 'mr' ? (e.dateMr || e.date) : e.date],
-            [t.recordedBy, lang === 'mr' ? 'सिद्धार्थ कदम' : 'Siddharth Kadam'],
-            [t.status, lang === 'mr' ? (e.status === 'approved' ? 'मंजूर' : e.status === 'pending' ? 'प्रलंबित' : 'नाकारले') : e.status]
+            [t.recordedBy, lang === 'mr' ? (e.submittedBy || 'सिद्धार्थ कदम') : (e.submittedBy || 'Siddharth Kadam')],
+            [t.status, lang === 'mr' ? (e.status === 'approved' ? 'मंजूर' : e.status === 'paid' ? 'भरले' : 'सादर केले') : e.status],
+            ...(e.notes ? [[lang === 'mr' ? 'शेरा / तपशील' : 'Notes', e.notes]] : [])
           ].map(([k, v]) => (
             <div key={k} className="flex items-start justify-between py-2.5 border-b border-stone-100 last:border-0">
-              <span className="text-[13px] text-[#78716C]">{k}</span>
-              <span className="text-[13px] font-semibold text-[#1C1917] text-right ml-4 capitalize">{v}</span>
+              <span className="text-[13px] text-[#78716C] devanagari">{k}</span>
+              <span className="text-[13px] font-bold text-[#1C1917] text-right ml-4 capitalize devanagari">{v}</span>
             </div>
           ))}
         </Card>
+
+        {/* ── Bill Document Card / Section ── */}
+        <div className="bg-white rounded-2xl p-4 shadow-sm border border-stone-100 mb-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-[13px] font-bold text-[#1C1917] flex items-center gap-1.5 devanagari">
+              <Receipt className="w-4 h-4 text-[#8B0000]" />
+              <span>{lang === 'mr' ? 'जोडलेले बिल / पावती कागदपत्र' : 'Attached Bill / Receipt'}</span>
+            </h3>
+            {Boolean(e.billDocument || e.billUrl) && (
+              <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
+                {lang === 'mr' ? 'प्रमाणित' : 'Verified'}
+              </span>
+            )}
+          </div>
+
+          {e.billDocument || e.billUrl ? (
+            <div>
+              {/* If image */}
+              {(e.billDocument && e.billDocument.startsWith('data:image/')) || e.billUrl ? (
+                <div
+                  onClick={() => setPreviewOpen(true)}
+                  className="rounded-2xl overflow-hidden border border-stone-200 bg-stone-50 cursor-pointer relative group mb-3 max-h-48 flex items-center justify-center"
+                >
+                  <img src={e.billDocument || e.billUrl} alt="Bill Document" className="w-full h-auto max-h-48 object-contain" />
+                  <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <span className="bg-white text-stone-800 text-[12px] font-bold px-3 py-1 rounded-full shadow-md flex items-center gap-1.5">
+                      <Eye className="w-3.5 h-3.5" />
+                      {lang === 'mr' ? 'पूर्ण आकारात पहा' : 'View Full Image'}
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                /* If PDF or generic doc */
+                <div className="p-4 bg-stone-50 border border-stone-200 rounded-xl flex items-center gap-3 mb-3">
+                  <FileText className="w-8 h-8 text-[#8B0000]" />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-[13px] text-[#1C1917] truncate">{e.billName || 'Receipt_Doc.pdf'}</p>
+                    <p className="text-[11px] text-[#78716C]">{e.billSize || 'PDF Document'}</p>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setPreviewOpen(true)}
+                  className="flex-1 py-2.5 px-3 bg-[#8B0000]/10 text-[#8B0000] rounded-xl text-[12.5px] font-bold flex items-center justify-center gap-1.5 hover:bg-[#8B0000]/20 transition-colors devanagari"
+                >
+                  <Eye className="w-4 h-4" />
+                  <span>{lang === 'mr' ? 'कागदपत्र पहा' : 'View Document'}</span>
+                </button>
+                {e.billDocument && (
+                  <a
+                    href={e.billDocument}
+                    download={e.billName || `Bill_${e.id || 'receipt'}.jpg`}
+                    className="py-2.5 px-4 bg-stone-100 text-stone-700 rounded-xl text-[12.5px] font-bold flex items-center justify-center gap-1.5 hover:bg-stone-200 transition-colors devanagari"
+                  >
+                    <Download className="w-4 h-4" />
+                    <span>{lang === 'mr' ? 'डाउनलोड' : 'Download'}</span>
+                  </a>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-5 border border-dashed border-stone-200 rounded-xl bg-stone-50">
+              <Receipt className="w-8 h-8 text-stone-300 mx-auto mb-1.5" />
+              <p className="text-[12.5px] font-medium text-stone-500 devanagari">
+                {lang === 'mr' ? 'या खर्चासाठी बिल कागदपत्र जोडलेले नाही' : 'No bill document attached'}
+              </p>
+              <button
+                onClick={() => push('new-expense')}
+                className="mt-2 text-[11px] font-bold text-[#8B0000] hover:underline devanagari"
+              >
+                {lang === 'mr' ? '+ नवीन बिल जोडून नोंद करा' : '+ Record with Bill'}
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Action Buttons */}
         <div className="flex gap-3">
           {[
-            { icon: Edit3, label: t.edit, screen: 'audit-history' as Screen },
-            { icon: AlertCircle, label: t.correctionRequest, screen: 'correction-request' as Screen },
-            { icon: BookOpen, label: t.auditHistory, screen: 'audit-history' as Screen }
-          ].map(({ icon: Icon, label, screen }) => (
-            <button key={label} onClick={() => push(screen)} className="flex-1 flex flex-col items-center gap-1.5 p-3 bg-white rounded-xl shadow-card">
-              <Icon className="w-5 h-5 text-[#78716C]" />
-              <span className="text-[10px] font-semibold text-[#78716C] text-center">{label}</span>
+            { icon: Share2, label: lang === 'mr' ? 'शेअर करा' : 'Share', action: () => { if (navigator.share) navigator.share({ title: 'Sahakar Mandal Expense', text: `Expense: ${e.vendor} - ₹${e.amount}` }).catch(() => {}) } },
+            { icon: Printer, label: lang === 'mr' ? 'प्रिंट व्हाउचर्स' : 'Print', action: () => window.print() },
+            { icon: BookOpen, label: t.auditHistory, action: () => push('audit-history') }
+          ].map(({ icon: Icon, label, action }) => (
+            <button key={label} onClick={action} className="flex-1 flex flex-col items-center gap-1.5 p-3 bg-white rounded-2xl shadow-sm border border-stone-100 hover:bg-stone-50 transition-colors">
+              <Icon className="w-5 h-5 text-[#8B0000]" />
+              <span className="text-[11px] font-semibold text-[#1C1917] text-center devanagari">{label}</span>
             </button>
           ))}
         </div>
       </div>
+
+      {/* Fullscreen Preview Modal */}
+      {previewOpen && (e.billDocument || e.billUrl) && (
+        <div className="fixed inset-0 z-50 bg-black/85 flex flex-col items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white rounded-3xl overflow-hidden max-w-sm w-full max-h-[85vh] flex flex-col shadow-2xl">
+            <div className="px-4 py-3 bg-stone-900 text-white flex items-center justify-between">
+              <div className="flex items-center gap-2 truncate pr-2">
+                <Receipt className="w-4 h-4 text-amber-400 flex-shrink-0" />
+                <p className="text-[13px] font-bold truncate">{e.vendor} — ₹{e.amount}</p>
+              </div>
+              <button onClick={() => setPreviewOpen(false)} className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center text-white">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-auto p-4 bg-stone-100 flex items-center justify-center min-h-[300px]">
+              <img src={e.billDocument || e.billUrl} alt="Bill Full View" className="max-w-full max-h-[65vh] object-contain rounded-lg shadow-md" />
+            </div>
+            <div className="p-3 bg-white border-t border-stone-200 flex justify-between items-center">
+              {e.billDocument && (
+                <a
+                  href={e.billDocument}
+                  download={e.billName || 'Bill_Receipt.jpg'}
+                  className="px-4 py-2 bg-stone-100 text-stone-700 font-bold text-[12px] rounded-xl flex items-center gap-1"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  {lang === 'mr' ? 'डाउनलोड' : 'Download'}
+                </a>
+              )}
+              <button
+                onClick={() => setPreviewOpen(false)}
+                className="px-5 py-2 bg-[#8B0000] text-white font-bold text-[13px] rounded-xl ml-auto"
+              >
+                {lang === 'mr' ? 'बंद करा' : 'Close'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
 
+
 // ─── SCREEN: QR PAYMENT ───────────────────────────────────────────────────────
 
-function QRPaymentScreen({ lang, push, pop }: { lang: Lang; push: (s: Screen) => void; pop: () => void }) {
+function QRPaymentScreen({ lang, push, pop, store }: { lang: Lang; push: (s: Screen) => void; pop: () => void; store?: AppStore }) {
   const t = TR[lang]
   const [step, setStep] = useState<'setup' | 'qr' | 'waiting'>('setup')
+  const [amount, setAmount] = useState('1250')
+  const [donorName, setDonorName] = useState('')
   return (
     <div className="flex-1 flex flex-col">
       <AppHeader title={t.qrPayment} onBack={pop} lang={lang} />
@@ -3541,11 +4440,11 @@ function QRPaymentScreen({ lang, push, pop }: { lang: Lang; push: (s: Screen) =>
               <label className="text-[13px] font-semibold text-[#1C1917] mb-2 block">{t.amount}</label>
               <div className="flex items-center gap-3 bg-white border-2 border-[#8B0000] rounded-xl px-4 h-16 shadow-brand">
                 <IndianRupee className="w-6 h-6 text-[#8B0000]" />
-                <input defaultValue="1250" className="flex-1 text-[28px] font-bold text-[#1C1917] outline-none bg-transparent" type="number" />
+                <input value={amount} onChange={e => setAmount(e.target.value)} className="flex-1 text-[28px] font-bold text-[#1C1917] outline-none bg-transparent" type="number" />
               </div>
               <div className="flex gap-2 mt-3">
                 {[501, 1001, 2001, 5001].map(a => (
-                  <button key={a} className="flex-1 h-9 bg-[#8B0000]/8 text-[#8B0000] rounded-lg text-[13px] font-semibold">₹{a.toLocaleString()}</button>
+                  <button key={a} onClick={() => setAmount(a.toString())} className="flex-1 h-9 bg-[#8B0000]/8 text-[#8B0000] rounded-lg text-[13px] font-semibold">₹{a.toLocaleString()}</button>
                 ))}
               </div>
             </div>
@@ -3569,23 +4468,19 @@ function QRPaymentScreen({ lang, push, pop }: { lang: Lang; push: (s: Screen) =>
           <div className="animate-scale-in flex flex-col items-center gap-5">
             <div className="bg-white rounded-2xl p-5 shadow-card w-full flex flex-col items-center">
               <MandalLogo size={40} />
-              <h2 className="font-bold text-[16px] text-[#1C1917] mt-2">{lang === 'mr' ? 'श्रीमंत सहकार मित्र मंडळ' : 'Shrimant Sahakar Mitra Mandal'}</h2>
+              <h2 className="font-bold text-[16px] text-[#1C1917] mt-2">{lang === 'mr' ? 'सहकार मित्र मंडळ' : 'Sahakar Mitra Mandal'}</h2>
               <p className="text-[#78716C] text-[12px] mb-4">{lang === 'mr' ? 'गणेशोत्सव २०२६' : 'Ganeshotsav 2026'}</p>
               {/* QR Code placeholder */}
-              <div className="w-48 h-48 bg-[#1C1917] rounded-2xl flex items-center justify-center relative overflow-hidden">
-                <div className="grid grid-cols-8 grid-rows-8 gap-0.5 p-3">
-                  {Array.from({ length: 64 }, (_, i) => (
-                    <div key={i} className={`w-4 h-4 rounded-sm ${Math.random() > 0.5 ? 'bg-white' : 'bg-transparent'}`} />
-                  ))}
-                </div>
+              <div className="w-48 h-48 bg-white rounded-2xl flex items-center justify-center relative overflow-hidden shadow-sm border border-stone-100 p-2">
+                <QRCode value={`upi://pay?pa=sahakar@sbi&pn=SahakarMitraMandal&am=${amount || '0'}&cu=INR`} size={170} fgColor="#1C1917" />
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center">
-                    <MandalLogo size={32} />
+                  <div className="w-11 h-11 bg-white rounded-xl flex items-center justify-center border border-stone-200 shadow-sm">
+                    <MandalLogo size={26} />
                   </div>
                 </div>
               </div>
-              <p className="text-[20px] font-bold text-[#1C1917] mt-4">₹1,250</p>
-              <p className="text-[#78716C] text-[13px]">{lang === 'mr' ? 'राहुल पाटील • गणेशोत्सव २०२६' : 'Rahul Patil • Ganeshotsav 2026'}</p>
+              <p className="text-[20px] font-bold text-[#1C1917] mt-4">₹{Number(amount || 0).toLocaleString('en-IN')}</p>
+              <p className="text-[#78716C] text-[13px] text-center">{donorName || (lang === 'mr' ? 'अज्ञात देणगीदार' : 'Unknown Donor')} <br/> <span className="text-[11px] text-stone-400">{lang === 'mr' ? 'गणेशोत्सव २०२६' : 'Ganeshotsav 2026'}</span></p>
               <p className="text-[12px] text-[#78716C] mt-1">{t.upiId}: sahakar@sbi</p>
             </div>
             {step === 'waiting' ? (
@@ -3627,15 +4522,37 @@ function QRPaymentScreen({ lang, push, pop }: { lang: Lang; push: (s: Screen) =>
 
 // ─── SCREEN: PAYMENT SUCCESS ──────────────────────────────────────────────────
 
-function PaymentSuccessScreen({ lang, push, pop }: { lang: Lang; push: (s: Screen) => void; pop: () => void }) {
+function PaymentSuccessScreen({ lang, push, pop, store, onDone }: { lang: Lang; push: (s: Screen) => void; pop: () => void; store?: AppStore; onDone?: () => void }) {
   const t = TR[lang]
+  const tx = store?.state.lastTransaction || store?.state.transactions?.[0] || {
+    amount: 1001,
+    person: 'राहुल पाटील',
+    personMr: 'राहुल पाटील',
+    festival: 'गणेशोत्सव २०२६',
+    festivalMr: 'गणेशोत्सव २०२६',
+    receipt: 'RCP-2026-0841',
+    method: 'UPI',
+    createdAt: new Date().toISOString()
+  }
+  const donorName = lang === 'mr' ? (tx.personMr || tx.person) : (tx.person || tx.personMr)
+  const festivalTitle = lang === 'mr' ? (tx.festivalMr || tx.festival) : (tx.festival || tx.festivalMr)
+  const formattedDate = tx.createdAt ? new Date(tx.createdAt).toLocaleDateString(lang === 'mr' ? 'mr-IN' : 'en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : (lang === 'mr' ? '२५ ऑगस्ट २०२६' : '25 Aug 2026')
+
+  const handleFinish = () => {
+    if (onDone) {
+      onDone()
+    } else {
+      pop()
+      pop()
+    }
+  }
+
   return (
     <div className="flex-1 flex flex-col bg-[#FFFBF5]">
-      <div className="flex-1 flex flex-col items-center justify-center px-6">
-        <div className="animate-scale-in flex flex-col items-center gap-5 w-full">
-          {/* Success icon */}
-          <div className="w-24 h-24 rounded-full bg-emerald-50 border-4 border-emerald-200 flex items-center justify-center">
-            <CheckCircle2 className="w-12 h-12 text-emerald-500" />
+      <div className="flex-1 overflow-y-auto no-scrollbar bg-[#FFFBF5] px-5 py-8 flex flex-col items-center justify-between">
+        <div className="flex flex-col items-center w-full">
+          <div className="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center mb-4 animate-scale-up">
+            <Check className="w-10 h-10 text-emerald-600 stroke-[3]" />
           </div>
           <div className="text-center">
             <h1 className="text-[26px] font-bold text-[#1C1917] mb-1">{t.paymentReceived}</h1>
@@ -3643,15 +4560,15 @@ function PaymentSuccessScreen({ lang, push, pop }: { lang: Lang; push: (s: Scree
           </div>
           <Card className="p-5 w-full">
             <div className="text-center mb-4">
-              <p className="text-[32px] font-bold text-emerald-600">₹5,001</p>
-              <p className="text-[13px] text-[#78716C]">{lang === 'mr' ? 'UPI द्वारे' : 'via UPI'}</p>
+              <p className="text-[32px] font-bold text-emerald-600">{fmt(tx.amount || 1001)}</p>
+              <p className="text-[13px] text-[#78716C]">{lang === 'mr' ? `${tx.method === 'Cash' ? 'रोख' : tx.method} द्वारे` : `via ${tx.method}`}</p>
             </div>
             {[
-              [t.donor, lang === 'mr' ? 'महादेव खडये' : 'Mahadev Khadye'],
-              [t.festival, lang === 'mr' ? 'गणेशोत्सव २०२६' : 'Ganeshotsav 2026'],
-              [t.receiptNo, 'RCP-2026-0841'],
-              [t.date, lang === 'mr' ? '२५ ऑगस्ट २०२६ • दुपारी ४:१५' : '25 Aug 2026 • 4:15 PM'],
-              [t.recordedBy, lang === 'mr' ? 'सिद्धार्थ कदम' : 'Siddharth Kadam']
+              [t.donor, donorName],
+              [t.festival, festivalTitle],
+              [t.receiptNo, tx.receipt || 'RCP-2026-0841'],
+              [t.date, formattedDate],
+              [t.recordedBy, store?.state.currentUser?.name || (lang === 'mr' ? 'सिद्धार्थ कदम' : 'Siddharth Kadam')]
             ].map(([k, v]) => (
               <div key={k} className="flex items-center justify-between py-2 border-b border-stone-100 last:border-0">
                 <span className="text-[13px] text-[#78716C]">{k}</span>
@@ -3664,8 +4581,8 @@ function PaymentSuccessScreen({ lang, push, pop }: { lang: Lang; push: (s: Scree
       </div>
       <div className="px-4 pb-6">
         <div className="flex gap-3 mb-3">
-          <button className="flex-1 flex flex-col items-center gap-1.5 p-3 bg-white rounded-xl shadow-card">
-            <MessageCircle className="w-5 h-5 text-green-600" />
+          <button onClick={() => window.open('https://api.whatsapp.com/send?text=' + encodeURIComponent((lang === 'mr' ? `सहकार मित्र मंडळ - ${donorName} यांची ${fmt(tx.amount || 1001)} देणगी पावती प्राप्त झाली! पावती क्र: ${tx.receipt || 'RCP-2026-0841'}` : `Sahakar Mitra Mandal - ${donorName} Donation Receipt ${tx.receipt || 'RCP-2026-0841'} for ${fmt(tx.amount || 1001)}`)))} className="flex-1 flex flex-col items-center gap-1.5 p-3 bg-white rounded-xl shadow-card">
+            <WhatsAppIcon className="w-5 h-5 text-green-600" />
             <span className="text-[11px] font-semibold text-green-600">{t.whatsapp}</span>
           </button>
           <button className="flex-1 flex flex-col items-center gap-1.5 p-3 bg-white rounded-xl shadow-card">
@@ -3679,7 +4596,7 @@ function PaymentSuccessScreen({ lang, push, pop }: { lang: Lang; push: (s: Scree
         </div>
         <div className="flex gap-3">
           <Btn variant="secondary" onClick={() => push('receipt')} className="flex-1">{t.viewReceipt}</Btn>
-          <Btn onClick={pop} className="flex-1">{t.done}</Btn>
+          <Btn onClick={handleFinish} className="flex-1">{t.done}</Btn>
         </div>
       </div>
     </div>
@@ -3688,8 +4605,22 @@ function PaymentSuccessScreen({ lang, push, pop }: { lang: Lang; push: (s: Scree
 
 // ─── SCREEN: RECEIPT ─────────────────────────────────────────────────────────
 
-function ReceiptScreen({ lang, pop }: { lang: Lang; pop: () => void }) {
+function ReceiptScreen({ lang, pop, store }: { lang: Lang; pop: () => void; store?: AppStore }) {
   const t = TR[lang]
+  const tx = store?.state.lastTransaction || store?.state.transactions?.[0] || {
+    receipt: 'RCP-2026-0841',
+    amount: 5001,
+    person: 'महादेव खडये',
+    personMr: 'महादेव खडये',
+    festival: 'गणेशोत्सव २०२६',
+    festivalMr: 'गणेशोत्सव २०२६',
+    method: 'UPI',
+    createdAt: new Date().toISOString()
+  }
+  const donorName = lang === 'mr' ? (tx.personMr || tx.person) : (tx.person || tx.personMr)
+  const festivalTitle = lang === 'mr' ? (tx.festivalMr || tx.festival) : (tx.festival || tx.festivalMr)
+  const formattedDate = tx.createdAt ? new Date(tx.createdAt).toLocaleDateString(lang === 'mr' ? 'mr-IN' : 'en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : (lang === 'mr' ? '२५ ऑगस्ट २०२६' : '25 Aug 2026')
+
   return (
     <div className="flex-1 flex flex-col">
       <AppHeader title={lang === 'mr' ? 'देणगी पावती' : 'Donation Receipt'} onBack={pop} lang={lang} />
@@ -3700,7 +4631,7 @@ function ReceiptScreen({ lang, pop }: { lang: Lang; pop: () => void }) {
           <div className="bg-[#8B0000] px-5 py-6 flex flex-col items-center">
             <MandalLogo size={56} white />
             <p className="text-[#D97706] text-[12px] mt-2 font-semibold tracking-widest">{lang === 'mr' ? '॥ श्री गणेश ॥' : '|| Shree Ganesh ||'}</p>
-            <h2 className="text-white text-[16px] font-bold mt-1 text-center">{lang === 'mr' ? 'श्रीमंत सहकार मित्र मंडळ' : 'Shrimant Sahakar Mitra Mandal'}</h2>
+            <h2 className="text-white text-[16px] font-bold mt-1 text-center">{lang === 'mr' ? 'सहकार मित्र मंडळ' : 'Sahakar Mitra Mandal'}</h2>
             <p className="text-white/70 text-[12px]">{lang === 'mr' ? 'कसबा पेठ, पुणे' : 'Kasba Peth, Pune'}</p>
             <div className="w-full h-px bg-white/20 mt-3 mb-2" />
             <p className="text-[#D97706] text-[13px] font-bold uppercase tracking-wider">
@@ -3714,25 +4645,24 @@ function ReceiptScreen({ lang, pop }: { lang: Lang; pop: () => void }) {
             <div className="flex items-center justify-between mb-4 pb-3 border-b border-[#8B0000]/10">
               <div>
                 <p className="text-[11px] text-[#78716C]">{t.receiptNo}</p>
-                <p className="text-[16px] font-bold text-[#8B0000]">RCP-2026-0841</p>
+                <p className="text-[16px] font-bold text-[#8B0000]">{tx.receipt || 'RCP-2026-0841'}</p>
               </div>
               <div className="text-right">
                 <p className="text-[11px] text-[#78716C]">{t.date}</p>
-                <p className="text-[13px] font-semibold text-[#1C1917]">{lang === 'mr' ? '२५ ऑगस्ट २०२६' : '25 Aug 2026'}</p>
+                <p className="text-[13px] font-semibold text-[#1C1917]">{formattedDate}</p>
               </div>
             </div>
             {/* Amount */}
             <div className="bg-[#8B0000]/5 rounded-xl p-4 text-center mb-4">
               <p className="text-[11px] text-[#78716C] mb-1">{lang === 'mr' ? 'प्राप्त रक्कम' : 'Amount Received'}</p>
-              <p className="text-[32px] font-bold text-[#8B0000]">₹5,001</p>
-              <p className="text-[12px] text-[#78716C]">{lang === 'mr' ? 'पाच हजार एक रुपये' : 'Five Thousand One Rupees'}</p>
+              <p className="text-[32px] font-bold text-[#8B0000]">{fmt(tx.amount || 5001)}</p>
             </div>
             {[
-              [t.donor, lang === 'mr' ? 'महादेव खडये' : 'Mahadev Khadye'],
-              [t.festival, lang === 'mr' ? 'गणेशोत्सव २०२६' : 'Ganeshotsav 2026'],
-              [t.paymentMethod, 'UPI'],
-              [lang === 'mr' ? 'UPI संदर्भ' : 'UPI Reference', 'UPI2026082500341'],
-              [t.recordedBy, lang === 'mr' ? 'सिद्धार्थ कदम' : 'Siddharth Kadam']
+              [t.donor, donorName],
+              [t.festival, festivalTitle],
+              [t.paymentMethod, tx.method === 'Cash' ? (lang === 'mr' ? 'रोख' : 'Cash') : tx.method],
+              [lang === 'mr' ? 'UPI संदर्भ' : 'UPI Reference', (tx as any).upiRef || 'UPI2026082500341'],
+              [t.recordedBy, store?.state.currentUser?.name || (lang === 'mr' ? 'सिद्धार्थ कदम' : 'Siddharth Kadam')]
             ].map(([k, v]) => (
               <div key={k} className="flex items-center justify-between py-2.5 border-b border-[#8B0000]/8 last:border-0">
                 <span className="text-[12px] text-[#78716C]">{k}</span>
@@ -3749,7 +4679,7 @@ function ReceiptScreen({ lang, pop }: { lang: Lang; pop: () => void }) {
           </div>
         </div>
         <div className="flex gap-3 mt-4">
-          {[[MessageCircle, t.whatsapp, 'text-green-600', 'bg-green-50'], [Download, t.download, 'text-[#8B0000]', 'bg-[#8B0000]/5'], [Printer, t.print, 'text-[#78716C]', 'bg-stone-100'], [Share2, t.share, 'text-blue-600', 'bg-blue-50']].map(([Icon, label, tc, bg]) => (
+          {[[WhatsAppIcon, t.whatsapp, 'text-green-600', 'bg-green-50'], [Download, t.download, 'text-[#8B0000]', 'bg-[#8B0000]/5'], [Printer, t.print, 'text-[#78716C]', 'bg-stone-100'], [Share2, t.share, 'text-blue-600', 'bg-blue-50']].map(([Icon, label, tc, bg]) => (
             <button key={label as string} className={`flex-1 flex flex-col items-center gap-1.5 p-3 ${bg} rounded-xl`}>
               <Icon className={`w-5 h-5 ${tc}`} />
               <span className={`text-[10px] font-semibold ${tc}`}>{label as string}</span>
@@ -3820,10 +4750,11 @@ function PendingCollectionsScreen({ lang, push, pop, store }: { lang: Lang; push
 
 // ─── SCREEN: DONATIONS ────────────────────────────────────────────────────────
 
-function DonationsScreen({ lang, push, pop }: { lang: Lang; push: (s: Screen) => void; pop: () => void }) {
+function DonationsScreen({ lang, push, pop, store, onSelectDonor }: { lang: Lang; push: (s: Screen) => void; pop: () => void; store?: AppStore; onSelectDonor?: (d: any) => void }) {
   const [search, setSearch] = useState('')
 
-  const donors = [
+  // Baseline donors
+  const baseDonors = [
     { initials: 'SK', color: '#8B0000',  bg: '#FEE2E2', name: 'Suresh Kadam',    nameMr: 'सुरेश कदम',    phone: '98765 43210', amount: 45000, donations: 4, date: '12 Sep 2026' },
     { initials: 'SK', color: '#92400E',  bg: '#FEF3C7', name: 'Siddharth Kadam', nameMr: 'सिद्धार्थ कदम', phone: '87654 32109', amount: 32000, donations: 4, date: '10 Sep 2026' },
     { initials: 'MS', color: '#065F46',  bg: '#D1FAE5', name: 'Minal Shinde',    nameMr: 'मिनल शिंदे',    phone: '76543 21098', amount: 18500, donations: 4, date: '08 Sep 2026' },
@@ -3832,8 +4763,56 @@ function DonationsScreen({ lang, push, pop }: { lang: Lang; push: (s: Screen) =>
     { initials: 'AP', color: '#1D4ED8',  bg: '#DBEAFE', name: 'Amit Pawar',      nameMr: 'अमित पवार',      phone: '93210 56784', amount: 2000,  donations: 4, date: '01 Sep 2026' },
   ]
 
+  // Real-time dynamic donors aggregation
+  const incomeTxs = (store?.state.transactions ?? []).filter(tx => tx.type === 'income')
+  const donorsMap = new Map<string, any>()
+
+  // Process income transactions (newest first)
+  incomeTxs.forEach(tx => {
+    const pName = (tx.person || tx.personMr || '').trim()
+    if (!pName) return
+    const key = pName.toLowerCase()
+    const txDate = tx.createdAt
+      ? new Date(tx.createdAt).toLocaleDateString(lang === 'mr' ? 'mr-IN' : 'en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+      : (tx.time || 'Today')
+
+    if (donorsMap.has(key)) {
+      const cur = donorsMap.get(key)
+      cur.amount += (tx.amount || 0)
+      cur.donations += 1
+    } else {
+      const match = baseDonors.find(b => b.name.toLowerCase() === key || b.nameMr.toLowerCase() === key)
+      const parts = pName.split(' ')
+      const initials = parts.length > 1 ? (parts[0][0] + parts[1][0]).toUpperCase() : pName.slice(0, 2).toUpperCase()
+      donorsMap.set(key, {
+        initials: match?.initials || initials,
+        color: match?.color || '#8B0000',
+        bg: match?.bg || '#FEE2E2',
+        name: tx.person || match?.name || pName,
+        nameMr: tx.personMr || match?.nameMr || pName,
+        phone: (tx as any).phone || match?.phone || '98765 43210',
+        amount: (tx.amount || 0) + (match ? match.amount : 0),
+        donations: 1 + (match ? match.donations : 0),
+        date: txDate
+      })
+    }
+  })
+
+  // Add base donors not yet present
+  baseDonors.forEach(b => {
+    const key = b.name.toLowerCase()
+    if (!donorsMap.has(key)) {
+      donorsMap.set(key, { ...b })
+    }
+  })
+
+  const donors = Array.from(donorsMap.values())
+  const totalDonationsAmount = donors.reduce((s, d) => s + d.amount, 0)
+  const totalDonorsCount = donors.length
+
   const filtered = donors.filter(d =>
     d.name.toLowerCase().includes(search.toLowerCase()) ||
+    (d.nameMr && d.nameMr.toLowerCase().includes(search.toLowerCase())) ||
     d.phone.includes(search)
   )
 
@@ -3894,7 +4873,7 @@ function DonationsScreen({ lang, push, pop }: { lang: Lang; push: (s: Screen) =>
                   <span className="text-[9px] font-bold text-emerald-700">+12%</span>
                 </div>
               </div>
-              <p className="text-[20px] font-bold text-[#8B0000] leading-tight mt-0.5">₹1,42,000</p>
+              <p className="text-[20px] font-bold text-[#8B0000] leading-tight mt-0.5">{fmt(totalDonationsAmount)}</p>
               <p className="text-[10px] text-[#78716C] devanagari leading-tight mt-0.5">{lang === 'mr' ? 'मागील महिन्याच्या तुलनेत' : 'vs last month'}</p>
             </div>
           </div>
@@ -3908,10 +4887,10 @@ function DonationsScreen({ lang, push, pop }: { lang: Lang; push: (s: Screen) =>
                 <p className="text-[11px] text-[#78716C] devanagari leading-tight">{lang === 'mr' ? 'देणगीदार' : 'Donors'}</p>
                 <div className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full" style={{ background: '#FEE2E2' }}>
                   <TrendingUp style={{ width: 9, height: 9, color: '#DC2626' }} />
-                  <span className="text-[9px] font-bold text-red-700">+5</span>
+                  <span className="text-[9px] font-bold text-red-700">+{donors.length - baseDonors.length > 0 ? donors.length - baseDonors.length : 5}</span>
                 </div>
               </div>
-              <p className="text-[20px] font-bold text-[#8B0000] leading-tight mt-0.5">38</p>
+              <p className="text-[20px] font-bold text-[#8B0000] leading-tight mt-0.5">{totalDonorsCount}</p>
               <p className="text-[10px] text-[#78716C] devanagari leading-tight mt-0.5">{lang === 'mr' ? 'या महिन्यात नवीन' : 'new this month'}</p>
             </div>
           </div>
@@ -3928,8 +4907,11 @@ function DonationsScreen({ lang, push, pop }: { lang: Lang; push: (s: Screen) =>
         {/* Donor list */}
         <div className="px-4 flex flex-col gap-2 pb-24">
           {filtered.map((d, i) => (
-            <button key={i} onClick={() => push('donor-profile')}
-              className="bg-white rounded-2xl px-4 py-3.5 flex items-center gap-3 text-left w-full"
+            <button key={i} onClick={() => {
+                if (onSelectDonor) onSelectDonor(d)
+                push('donor-profile')
+              }}
+              className="bg-white rounded-2xl px-4 py-3.5 flex items-center gap-3 text-left w-full active:scale-[0.99] transition-transform"
               style={{ boxShadow: '0 1px 6px rgba(0,0,0,0.07)' }}>
               {/* Avatar */}
               <div className="w-12 h-12 rounded-2xl flex items-center justify-center font-bold text-[15px] flex-shrink-0"
@@ -3949,7 +4931,7 @@ function DonationsScreen({ lang, push, pop }: { lang: Lang; push: (s: Screen) =>
               {/* Date + chevron */}
               <div className="flex flex-col items-end gap-1 flex-shrink-0">
                 <ChevronRight className="w-4 h-4 text-stone-300" />
-                <span className="text-[11px] text-[#78716C]">{lang === 'mr' ? d.date.replace('Sep', 'सप्टें') : d.date}</span>
+                <span className="text-[11px] text-[#78716C]">{lang === 'mr' && typeof d.date === 'string' ? d.date.replace('Sep', 'सप्टें') : d.date}</span>
               </div>
             </button>
           ))}
@@ -3959,7 +4941,7 @@ function DonationsScreen({ lang, push, pop }: { lang: Lang; push: (s: Screen) =>
       {/* FAB */}
       <div className="absolute bottom-20 right-4">
         <button onClick={() => push('new-donation')}
-          className="flex items-center gap-2 px-5 py-3.5 rounded-full shadow-lg text-white font-semibold text-[14px] devanagari"
+          className="flex items-center gap-2 px-5 py-3.5 rounded-full shadow-lg text-white font-semibold text-[14px] devanagari active:scale-95 transition-transform"
           style={{ background: '#8B0000', boxShadow: '0 4px 16px rgba(139,0,0,0.45)' }}>
           <Plus className="w-4 h-4" />
           {lang === 'mr' ? 'नवीन देणगीदार' : 'New Donor'}
@@ -3971,9 +4953,27 @@ function DonationsScreen({ lang, push, pop }: { lang: Lang; push: (s: Screen) =>
 
 // ─── SCREEN: DONOR PROFILE ────────────────────────────────────────────────────
 
-function DonorProfileScreen({ lang, push, pop }: { lang: Lang; push: (s: Screen) => void; pop: () => void }) {
+function DonorProfileScreen({ lang, push, pop, donor, store }: { lang: Lang; push: (s: Screen) => void; pop: () => void; donor?: any; store?: AppStore }) {
   const t = TR[lang]
-  const m = MEMBERS[0]
+  const d = donor || store?.state.members[0] || MEMBERS[0]
+  const donorName = lang === 'mr' ? (d.nameMr || d.name) : d.name
+  const donorMobile = d.phone || d.mobile || '98765 43210'
+  const donorAvatar = d.initials || d.avatar || (donorName ? donorName.slice(0, 2).toUpperCase() : 'DK')
+  const donorColor = d.color || d.avatarColor || '#8B0000'
+  const donorBg = d.bg || '#FEE2E2'
+  const totalAmount = d.amount || d.contributions || 0
+  const totalDonations = d.donations || 1
+
+  const allTxs = store?.state.transactions && store.state.transactions.length > 0 ? store.state.transactions : TRANSACTIONS
+  const donorTxs = allTxs.filter(tx =>
+    tx.type === 'income' &&
+    (tx.person?.toLowerCase() === d.name?.toLowerCase() ||
+     tx.personMr?.toLowerCase() === d.nameMr?.toLowerCase() ||
+     tx.person?.toLowerCase() === d.nameMr?.toLowerCase() ||
+     tx.personMr?.toLowerCase() === d.name?.toLowerCase())
+  )
+  const displayTxs = donorTxs.length > 0 ? donorTxs : allTxs.filter(tx => tx.type === 'income').slice(0, 4)
+
   return (
     <div className="flex-1 flex flex-col">
       <div className="bg-[#8B0000] px-4 pt-10 pb-5">
@@ -3981,15 +4981,22 @@ function DonorProfileScreen({ lang, push, pop }: { lang: Lang; push: (s: Screen)
           <ChevronLeft className="w-5 h-5 text-white" />
         </button>
         <div className="flex items-center gap-4 mb-4">
-          <div className="w-16 h-16 rounded-2xl bg-white/20 text-white text-[24px] font-bold flex items-center justify-center">{m.avatar}</div>
+          <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-[22px] font-bold shadow-md" style={{ background: donorBg, color: donorColor }}>
+            {donorAvatar}
+          </div>
           <div>
-            <h2 className="text-white text-[20px] font-bold">{m.name}</h2>
-            <p className="text-white/70 text-[13px]">{m.mobile}</p>
-            <p className="text-white/60 text-[12px]">{lang === 'mr' ? 'पहिली देणगी: जाने २०२०' : 'First donation: Jan 2020'}</p>
+            <h2 className="text-white text-[20px] font-bold">{donorName}</h2>
+            <p className="text-white/70 text-[13px]">{donorMobile}</p>
+            <p className="text-white/60 text-[12px]">{lang === 'mr' ? 'देणगीदार सदस्य' : 'Active Donor Member'}</p>
           </div>
         </div>
         <div className="grid grid-cols-4 gap-3 bg-white/10 rounded-2xl p-3">
-          {[[lang === 'mr' ? 'एकूण' : 'Total', fmt(m.contributions)], [lang === 'mr' ? 'देणग्या' : 'Donations', '12'], [lang === 'mr' ? 'मोठी' : 'Largest', '₹10,000'], [lang === 'mr' ? 'शेवटची' : 'Last', lang === 'mr' ? '३ दिवसांपूर्वी' : '3d ago']].map(([k, v]) => (
+          {[
+            [lang === 'mr' ? 'एकूण' : 'Total', fmt(totalAmount)],
+            [lang === 'mr' ? 'देणग्या' : 'Donations', String(totalDonations)],
+            [lang === 'mr' ? 'मोठी' : 'Largest', fmt(Math.max(totalAmount, 5000))],
+            [lang === 'mr' ? 'शेवटची' : 'Last', lang === 'mr' ? (typeof d.date === 'string' ? d.date.replace('Sep', 'सप्टें') : 'अलीकडे') : (d.date || 'Recent')]
+          ].map(([k, v]) => (
             <div key={k} className="text-center">
               <p className="text-white/60 text-[9px]">{k}</p>
               <p className="text-white font-bold text-[12px]">{v}</p>
@@ -3999,17 +5006,17 @@ function DonorProfileScreen({ lang, push, pop }: { lang: Lang; push: (s: Screen)
       </div>
       <div className="flex-1 overflow-y-auto no-scrollbar bg-[#FFFBF5] px-4 py-4">
         <SectionHeader title={lang === 'mr' ? 'देणगी इतिहास' : 'Donation History'} />
-        {TRANSACTIONS.filter(tx => tx.type === 'income').map(tx => (
-          <Card key={tx.id} className="p-3 mb-2 flex items-center gap-3">
+        {displayTxs.map(tx => (
+          <Card key={tx.id || (tx as any)._id || Math.random()} className="p-3 mb-2 flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center">
               <IndianRupee className="w-4 h-4 text-emerald-600" />
             </div>
             <div className="flex-1">
-              <p className="text-[13px] font-semibold text-[#1C1917]">{lang === 'mr' ? (tx.festival === 'Ganeshotsav 2026' ? 'गणेशोत्सव २०२६' : tx.festival) : tx.festival}</p>
+              <p className="text-[13px] font-semibold text-[#1C1917]">{lang === 'mr' ? (tx.festivalMr || tx.festival) : tx.festival}</p>
               <div className="flex items-center gap-2">
                 <span className="text-[11px] text-[#78716C]">{lang === 'mr' && tx.method === 'Cash' ? 'रोख' : tx.method}</span>
                 <span className="text-[10px] text-stone-300">•</span>
-                <span className="text-[11px] text-[#78716C]">{tx.time}</span>
+                <span className="text-[11px] text-[#78716C]">{tx.timeMr || tx.time || 'आत्ताच'}</span>
               </div>
             </div>
             <div className="text-right">
@@ -5072,7 +6079,7 @@ function MoreScreen({ lang, push, onLangToggle, store }: { lang: Lang; push: (s:
             <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold devanagari mt-0.5" style={{ background: '#FEF3C7', color: '#92400E' }}>
               {lang === 'mr' ? (store?.state.currentUser?.roleMr ?? 'खजिनदार') : (store?.state.currentUser?.role ?? 'Treasurer')}
             </span>
-            <p className="text-[11px] text-[#78716C] mt-0.5 truncate devanagari">{lang === 'mr' ? 'श्रीमंत सहकार मित्र मंडळ' : 'Shrimant Sahakar Mitra Mandal'}</p>
+            <p className="text-[11px] text-[#78716C] mt-0.5 truncate devanagari">{lang === 'mr' ? 'सहकार मित्र मंडळ' : 'Sahakar Mitra Mandal'}</p>
             <div className="flex items-center gap-3 mt-1">
               <div className="flex items-center gap-1">
                 <Phone className="w-3 h-3 text-stone-400" />
@@ -5305,7 +6312,7 @@ function MandalProfileScreen({ lang, pop }: { lang: Lang; pop: () => void }) {
         <div className="flex flex-col items-center py-5 mb-4">
           <MandalLogo size={72} />
           <h2 className="text-[18px] font-bold text-[#1C1917] mt-3 text-center">
-            {lang === 'mr' ? 'श्रीमंत सहकार मित्र मंडळ' : 'Shrimant Sahakar Mitra Mandal'}
+            {lang === 'mr' ? 'सहकार मित्र मंडळ' : 'Sahakar Mitra Mandal'}
           </h2>
           <p className="text-[12px] text-[#78716C] mt-0.5">
             {lang === 'mr' ? 'कसबा पेठ, पुणे • स्थापना १९८५' : 'Kasba Peth, Pune • Est. 1985'}
@@ -5467,8 +6474,8 @@ function JoinMandalScreen({ lang, pop }: { lang: Lang; pop: () => void }) {
             <button className="flex items-center gap-2 px-4 py-2 bg-white rounded-xl shadow-card text-[13px] font-semibold text-[#8B0000]">
               <Copy className="w-4 h-4" /> {lang === 'mr' ? 'कॉपी' : 'Copy'}
             </button>
-            <button className="flex items-center gap-2 px-4 py-2 bg-green-50 rounded-xl shadow-card text-[13px] font-semibold text-green-700">
-              <Share2 className="w-4 h-4" /> {lang === 'mr' ? 'शेअर' : 'Share'}
+            <button onClick={() => window.open('https://api.whatsapp.com/send?text=' + encodeURIComponent((lang === 'mr' ? 'सहकार मित्र मंडळात सामील व्हा! कोड: ' : 'Join Sahakar Mitra Mandal! Code: ') + (lang === 'mr' ? '४८२ ७६१' : '482 761')))} className="flex items-center gap-2 px-4 py-2 bg-green-50 rounded-xl shadow-card text-[13px] font-semibold text-green-700">
+              <WhatsAppIcon className="w-4 h-4 text-green-600" /> {lang === 'mr' ? 'शेअर' : 'Share'}
             </button>
           </div>
         </div>
@@ -5603,8 +6610,8 @@ function WhatsAppReminderScreen({ lang, pop, store }: { lang: Lang; pop: () => v
   const person = store?.state.pendingCollections?.[0]
   const [msg, setMsg] = useState(
     lang === 'mr'
-      ? `नमस्कार ${person?.name || 'सदस्य'} जी 🙏\n\nश्रीमंत सहकार मित्र मंडळ\n\nगणेशोत्सव २०२६ साठी आपली वर्गणी ₹${person?.outstanding?.toLocaleString('en-IN') || 0} बाकी आहे.\n\nकृपया लवकरात लवकर भरावी.\n\nधन्यवाद!\nगणपती बाप्पा मोरया 🙏`
-      : `Dear ${person?.name || 'Member'} Ji,\n\nShrimant Sahakar Mitra Mandal\n\nYour Ganeshotsav 2026 contribution of ₹${person?.outstanding?.toLocaleString('en-IN') || 0} is pending.\n\nPlease make the payment at your earliest convenience.\n\nThank you!`
+      ? `नमस्कार ${person?.name || 'सदस्य'} जी 🙏\n\nसहकार मित्र मंडळ\n\nगणेशोत्सव २०२६ साठी आपली वर्गणी ₹${person?.outstanding?.toLocaleString('en-IN') || 0} बाकी आहे.\n\nकृपया लवकरात लवकर भरावी.\n\nधन्यवाद!\nगणपती बाप्पा मोरया 🙏`
+      : `Dear ${person?.name || 'Member'} Ji,\n\nSahakar Mitra Mandal\n\nYour Ganeshotsav 2026 contribution of ₹${person?.outstanding?.toLocaleString('en-IN') || 0} is pending.\n\nPlease make the payment at your earliest convenience.\n\nThank you!`
   )
   if (!person) return null;
   return (
@@ -5627,13 +6634,13 @@ function WhatsAppReminderScreen({ lang, pop, store }: { lang: Lang; pop: () => v
         <div className="flex gap-2 mt-3">
           <button onClick={() => setMsg(
             lang === 'mr'
-              ? `नमस्कार ${person.name} जी 🙏\n\nश्रीमंत सहकार मित्र मंडळ\n\nगणेशोत्सव २०२६ साठी आपली वर्गणी ₹${person.outstanding.toLocaleString('en-IN')} बाकी आहे.\n\nकृपया लवकरात लवकर भरावी.\n\nधन्यवाद!\nगणपती बाप्पा मोरया 🙏`
-              : `Dear ${person.name} Ji,\n\nShrimant Sahakar Mitra Mandal\n\nYour Ganeshotsav 2026 contribution of ₹${person.outstanding.toLocaleString('en-IN')} is pending.\n\nPlease make the payment at your earliest convenience.\n\nThank you!`
+              ? `नमस्कार ${person.name} जी 🙏\n\nसहकार मित्र मंडळ\n\nगणेशोत्सव २०२६ साठी आपली वर्गणी ₹${person.outstanding.toLocaleString('en-IN')} बाकी आहे.\n\nकृपया लवकरात लवकर भरावी.\n\nधन्यवाद!\nगणपती बाप्पा मोरया 🙏`
+              : `Dear ${person.name} Ji,\n\nSahakar Mitra Mandal\n\nYour Ganeshotsav 2026 contribution of ₹${person.outstanding.toLocaleString('en-IN')} is pending.\n\nPlease make the payment at your earliest convenience.\n\nThank you!`
           )} className="flex-1 h-9 bg-stone-100 rounded-lg text-[12px] font-semibold text-[#78716C]">
             {lang === 'mr' ? 'मराठी' : 'Marathi'}
           </button>
           <button onClick={() => setMsg(
-            `Dear ${person.name} Ji,\n\nShrimant Sahakar Mitra Mandal\n\nYour Ganeshotsav 2026 contribution of ₹${person.outstanding.toLocaleString('en-IN')} is pending.\n\nPlease make the payment at your earliest convenience.\n\nThank you!`
+            `Dear ${person.name} Ji,\n\nSahakar Mitra Mandal\n\nYour Ganeshotsav 2026 contribution of ₹${person.outstanding.toLocaleString('en-IN')} is pending.\n\nPlease make the payment at your earliest convenience.\n\nThank you!`
           )} className="flex-1 h-9 bg-stone-100 rounded-lg text-[12px] font-semibold text-[#78716C]">
             {lang === 'mr' ? 'इंग्रजी' : 'English'}
           </button>
@@ -5646,8 +6653,8 @@ function WhatsAppReminderScreen({ lang, pop, store }: { lang: Lang; pop: () => v
         <button className="flex-1 h-12 border border-stone-200 rounded-xl text-[14px] font-semibold text-[#78716C] flex items-center justify-center gap-2">
           <Copy className="w-4 h-4" /> {lang === 'mr' ? 'कॉपी' : 'Copy'}
         </button>
-        <button className="flex-1 h-12 bg-[#25D366] rounded-xl text-[14px] font-semibold text-white flex items-center justify-center gap-2">
-          <MessageCircle className="w-4 h-4" /> {lang === 'mr' ? 'व्हॉट्सॲपवर पाठवा' : 'Send WhatsApp'}
+        <button onClick={() => window.open('https://api.whatsapp.com/send?text=' + encodeURIComponent(msg || (lang === 'mr' ? 'सहकार मित्र मंडळ - स्मरणपत्र' : 'Sahakar Mitra Mandal Reminder')))} className="flex-1 h-12 bg-[#25D366] rounded-xl text-[14px] font-semibold text-white flex items-center justify-center gap-2">
+          <WhatsAppIcon className="w-4 h-4" /> {lang === 'mr' ? 'व्हॉट्सॲपवर पाठवा' : 'Send WhatsApp'}
         </button>
       </div>
     </div>
@@ -5926,7 +6933,7 @@ function PublicPortalLandingScreen({ lang, push, pop }: { lang: Lang; push: (s: 
         <MandalLogo size={80} white />
         <div className="mt-4 text-center z-10">
           <p className="text-[#D97706] text-[12px] font-semibold tracking-widest mb-1">{lang === 'mr' ? '॥ श्री गणेश ॥' : '|| Shree Ganesh ||'}</p>
-          <h1 className="text-white text-[22px] font-bold leading-tight">{lang === 'mr' ? 'श्रीमंत सहकार' : 'Shrimant Sahakar'}</h1>
+          <h1 className="text-white text-[22px] font-bold leading-tight">{lang === 'mr' ? 'श्रीमंत सहकार' : 'Sahakar'}</h1>
           <h1 className="text-white text-[22px] font-bold leading-tight">{lang === 'mr' ? 'मित्र मंडळ' : 'Mitra Mandal'}</h1>
           <p className="text-white/70 text-[13px] mt-2">{lang === 'mr' ? 'कसबा पेठ, पुणे • स्थापना १९८५' : 'Kasba Peth, Pune • Est. 1985'}</p>
         </div>
@@ -6034,7 +7041,7 @@ function PublicQRScreen({ lang, push, pop }: { lang: Lang; push: (s: Screen) => 
       <div className="flex-1 flex flex-col items-center px-5 py-6">
         <Card className="p-5 w-full flex flex-col items-center mb-4">
           <MandalLogo size={40} />
-          <p className="font-bold text-[15px] text-[#1C1917] mt-2 text-center">{lang === 'mr' ? 'श्रीमंत सहकार मित्र मंडळ' : 'Shrimant Sahakar Mitra Mandal'}</p>
+          <p className="font-bold text-[15px] text-[#1C1917] mt-2 text-center">{lang === 'mr' ? 'सहकार मित्र मंडळ' : 'Sahakar Mitra Mandal'}</p>
           <p className="text-[12px] text-[#78716C] mb-4">{lang === 'mr' ? 'गणेशोत्सव २०२६' : 'Ganeshotsav 2026'}</p>
           <div className="w-52 h-52 bg-[#1C1917] rounded-2xl flex items-center justify-center relative overflow-hidden">
             <div className="grid grid-cols-9 grid-rows-9 gap-0.5 p-3">
@@ -6095,8 +7102,8 @@ function PublicSuccessScreen({ lang, push, pop }: { lang: Lang; push: (s: Screen
       </div>
       <div className="px-5 pb-8">
         <div className="flex gap-3 mb-3">
-          <button className="flex-1 flex flex-col items-center gap-1 p-3 bg-white rounded-xl shadow-card">
-            <MessageCircle className="w-5 h-5 text-green-600" />
+          <button onClick={() => window.open('https://api.whatsapp.com/send?text=' + encodeURIComponent((lang === 'mr' ? 'सहकार मित्र मंडळ - देणगी यशस्वी झाली! गणपती बाप्पा मोरया!' : 'Sahakar Mitra Mandal - Donation Successful! Shree Ganesh!')))} className="flex-1 flex flex-col items-center gap-1 p-3 bg-white rounded-xl shadow-card">
+            <WhatsAppIcon className="w-5 h-5 text-green-600" />
             <span className="text-[11px] font-semibold text-green-600">{lang === 'mr' ? 'व्हॉट्सॲप' : 'WhatsApp'}</span>
           </button>
           <button onClick={() => push('public-receipt')} className="flex-1 flex flex-col items-center gap-1 p-3 bg-white rounded-xl shadow-card">
@@ -6128,7 +7135,7 @@ function PublicReceiptScreen({ lang, pop }: { lang: Lang; pop: () => void }) {
           <div className="bg-[#8B0000] px-5 py-6 flex flex-col items-center">
             <MandalLogo size={52} white />
             <p className="text-[#D97706] text-[11px] mt-2 font-semibold tracking-widest">{lang === 'mr' ? '॥ श्री गणेश ॥' : '|| Shree Ganesh ||'}</p>
-            <h2 className="text-white text-[16px] font-bold mt-1 text-center">{lang === 'mr' ? 'श्रीमंत सहकार मित्र मंडळ' : 'Shrimant Sahakar Mitra Mandal'}</h2>
+            <h2 className="text-white text-[16px] font-bold mt-1 text-center">{lang === 'mr' ? 'सहकार मित्र मंडळ' : 'Sahakar Mitra Mandal'}</h2>
             <p className="text-white/70 text-[12px]">{lang === 'mr' ? 'कसबा पेठ, पुणे' : 'Kasba Peth, Pune'}</p>
           </div>
           <div className="h-1 bg-gradient-to-r from-[#D97706] via-[#B45309] to-[#D97706]" />
@@ -6161,7 +7168,7 @@ function PublicReceiptScreen({ lang, pop }: { lang: Lang; pop: () => void }) {
           </div>
         </div>
         <div className="flex gap-3 mt-4">
-          {[[MessageCircle, lang === 'mr' ? 'व्हॉट्सॲप' : 'WhatsApp', 'bg-green-50', 'text-green-600'], [Download, lang === 'mr' ? 'डाउनलोड' : 'Download', 'bg-[#8B0000]/5', 'text-[#8B0000]'], [Printer, lang === 'mr' ? 'प्रिंट' : 'Print', 'bg-stone-100', 'text-[#78716C]']].map(([Icon, label, bg, tc]) => (
+          {[[WhatsAppIcon, lang === 'mr' ? 'व्हॉट्सॲप' : 'WhatsApp', 'bg-green-50', 'text-green-600'], [Download, lang === 'mr' ? 'डाउनलोड' : 'Download', 'bg-[#8B0000]/5', 'text-[#8B0000]'], [Printer, lang === 'mr' ? 'प्रिंट' : 'Print', 'bg-stone-100', 'text-[#78716C]']].map(([Icon, label, bg, tc]) => (
             <button key={label as string} className={`flex-1 flex flex-col items-center gap-1.5 p-3 ${bg} rounded-xl`}>
               <Icon className={`w-5 h-5 ${tc}`} />
               <span className={`text-[10px] font-semibold ${tc}`}>{label as string}</span>
@@ -6278,6 +7285,8 @@ export default function App() {
   const [tab, setTab] = useState<Tab>('home')
   const [screenStack, setScreenStack] = useState<Screen[]>(['splash'])
   const [toast, setToast] = useState<string | null>(null)
+  const [selectedDonor, setSelectedDonor] = useState<any>(null)
+  const [selectedExpense, setSelectedExpense] = useState<any>(null)
 
   const currentScreen = screenStack[screenStack.length - 1]
   const isAuth = AUTH_SCREENS.includes(currentScreen)
@@ -6309,16 +7318,16 @@ export default function App() {
       case 'collections': return <CollectionsScreen {...screenProps} />
       case 'new-collection': return <NewCollectionScreen {...screenProps} />
       case 'collection-detail': return <TransactionDetailScreen {...screenProps} />
-      case 'donations': return <DonationsScreen {...screenProps} />
-      case 'donor-profile': return <DonorProfileScreen {...screenProps} />
-      case 'new-donation': return <NewCollectionScreen {...screenProps} />
-      case 'transactions': return <TransactionsScreen {...screenProps} />
+      case 'donations': return <DonationsScreen {...screenProps} onSelectDonor={d => setSelectedDonor(d)} />
+      case 'donor-profile': return <DonorProfileScreen {...screenProps} donor={selectedDonor} store={store} />
+      case 'new-donation': return <NewCollectionScreen {...screenProps} onComplete={() => setScreenStack(['dashboard', 'donations'])} />
+      case 'transactions': return <TransactionsScreen {...screenProps} onSelectExpense={e => setSelectedExpense(e)} />
       case 'transaction-detail': return <TransactionDetailScreen {...screenProps} />
       case 'festivals': return <FestivalsScreen {...screenProps} />
       case 'festival-detail': return <FestivalDetailScreen {...screenProps} />
       case 'add-festival': return <div className="p-10 text-center font-bold">Add Festival Coming Soon</div>
       case 'members': return <MembersScreen {...screenProps} />
-      case 'member-profile': return <MemberProfileScreen {...screenProps} />
+      case 'member-profile': return <MemberProfileScreen {...screenProps} store={store} />
       case 'add-member': return <div className="p-10 text-center font-bold">Add Member Coming Soon</div>
       case 'pending-members': return <MembersScreen {...screenProps} />
       case 'join-mandal': return <JoinMandalScreen {...screenProps} />
@@ -6327,7 +7336,7 @@ export default function App() {
       case 'expense-detail': return <ExpenseDetailScreen {...screenProps} />
       case 'expense-approval': return <ExpenseDetailScreen {...screenProps} />
       case 'qr-payment': return <QRPaymentScreen {...screenProps} />
-      case 'payment-success': return <PaymentSuccessScreen {...screenProps} />
+      case 'payment-success': return <PaymentSuccessScreen {...screenProps} store={store} onDone={() => setScreenStack(['dashboard', 'donations'])} />
       case 'receipt': return <ReceiptScreen {...screenProps} />
       case 'pending-collections': return <PendingCollectionsScreen {...screenProps} />
       case 'correction-request': return <CorrectionFormScreen {...screenProps} />
